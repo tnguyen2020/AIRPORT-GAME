@@ -595,7 +595,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
   function generateQR() {
-    const joinUrl = `http://192.168.1.94:3000/join.html`;    document.getElementById("join-url").textContent = joinUrl;
+    const joinUrl = `${location.protocol}//${location.hostname}/join.html`;
+    document.getElementById("join-url").textContent = joinUrl;
     document.getElementById("header-url").textContent = joinUrl;
     const qrDiv = document.getElementById("qrcode");
     qrDiv.innerHTML = "";
