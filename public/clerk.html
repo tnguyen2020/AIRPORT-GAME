@@ -588,15 +588,28 @@
     showToast("🧳 Ask the passenger how heavy their bag is!", "green");
   });
 
-  socket.on("weight_result", ({ correct, weight, correct_weight, entered }) => {
-    if (correct) {
-      document.getElementById("weight-box").classList.remove("show");
-      showToast(`✅ Correct! ${weight}kg confirmed!`, "green");
-    } else {
-      showToast(`❌ Wrong! Try again!`, "red");
-      document.getElementById("weight-input").value = "";
-    }
-  });
+socket.on("weight_result", ({ correct, weight, bagIndex }) => {
+  const feedback = document.getElementById("weight-feedback");
+  feedback.style.display = "block";
+  if (correct) {
+    feedback.style.background = "rgba(52,211,153,0.2)";
+    feedback.style.color = "#6ee7b7";
+    feedback.textContent = `✅ Correct! ${weight}kg confirmed!`;
+    document.getElementById("weight-input").value = "";
+    // Hide weight box after short delay
+    // (server will send enter_bag_weight again if more bags needed)
+    setTimeout(() => {
+      document.getElementById("weight-box").style.display = "none";
+      feedback.style.display = "none";
+    }, 1200);
+  } else {
+    feedback.style.background = "rgba(239,68,68,0.2)";
+    feedback.style.color = "#fca5a5";
+    feedback.textContent = `❌ Wrong! Try again!`;
+    document.getElementById("weight-input").value = "";
+    document.getElementById("weight-input").focus();
+  }
+});
 
   socket.on("spelling_result", ({ field, correct, answer, hint }) => {
     const feedback = document.getElementById("spelling-feedback");
@@ -750,15 +763,19 @@ function submitCarryOn() {
 }
 
 function confirmOverweightFee() {
-  const feeText = document.getElementById("overweight-details").textContent;
-  const feeMatch = feeText.match(/\$(\d+)/);
+  const details = document.getElementById("overweight-details");
+  const feeMatch = details.textContent.match(/\$(\d+)/);
   const fee = feeMatch ? parseInt(feeMatch[1]) : 0;
+  // Get nextStep from stored data attribute
+  const nextStep = document.getElementById("overweight-alert")
+    .getAttribute("data-next") || "done";
+  
   socket.emit("clerk_action", {
     action: "overweight_fee_paid",
-    data: { fee }
+    data: { fee, nextStep }
   });
   document.getElementById("overweight-alert").style.display = "none";
-  showToast("💰 Fee paid! Continue check-in.", "green");
+  showToast("💰 Fee paid! Continuing...", "green");
 }
 
 // Socket events for luggage
@@ -817,16 +834,22 @@ socket.on("carry_on_result", ({ correct, weight }) => {
   }
 });
 
-socket.on("bag_overweight", ({ weight, limit, fee, bagNumber }) => {
+socket.on("bag_overweight", ({ weight, limit, fee, bagNumber, nextStep }) => {
   document.getElementById("weight-box").style.display = "none";
   const alert = document.getElementById("overweight-alert");
   alert.style.display = "block";
+  // Store nextStep so we know what to do after fee
+  alert.setAttribute("data-next", nextStep || "done");
   document.getElementById("overweight-details").innerHTML = `
-    Bag ${bagNumber} weighs <strong style="color:#fca5a5">${weight}kg</strong><br>
+    Bag ${bagNumber} weighs 
+    <strong style="color:#fca5a5">${weight}kg</strong><br>
     Limit is <strong>${limit}kg</strong><br>
-    Overweight fee: <strong style="color:#fca5a5">$${fee}</strong>
+    Overweight fee: 
+    <strong style="color:#fca5a5">
+$$
+{fee}</strong>
   `;
-  showToast(`⚠️ Bag ${bagNumber} is overweight!`, "red");
+  showToast(`⚠️ Bag ${bagNumber} is overweight! $${fee} fee`, "red");
 });
 
 function unlockNextButton(field) {
