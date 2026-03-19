@@ -376,21 +376,94 @@
   </div>
 
   <!-- Weight input -->
-  <div class="weight-box" id="weight-box">
-    <p style="font-size:0.85rem;opacity:0.7;margin-bottom:10px;text-align:center">
-      🧳 Ask passenger: <strong>"How heavy is your bag?"</strong><br>Type the kg they say:
-    </p>
-    <div style="display:flex;gap:8px;align-items:center">
-      <input id="weight-input" type="number" min="1" max="50" placeholder="e.g. 18"
-        style="flex:1;padding:12px;border-radius:10px;border:2px solid rgba(255,255,255,0.2);
-               background:rgba(255,255,255,0.1);color:white;font-size:1.4rem;font-weight:700;
-               text-align:center;outline:none;"/>
-      <span style="font-size:1.1rem;opacity:0.6">kg</span>
-    </div>
-    <button onclick="submitWeight()" style="width:100%;margin-top:10px;padding:12px;
-      border-radius:10px;border:none;background:#f59e0b;color:#1a1a2e;
-      font-size:1rem;font-weight:700;cursor:pointer;">✅ Confirm Weight</button>
+ <!-- Weight Input Section -->
+<div class="weight-box" id="weight-box" style="display:none">
+  <div id="weight-box-title" style="
+    font-size:0.9rem;font-weight:700;
+    text-align:center;margin-bottom:10px;
+    color:#fde68a;
+  ">🧳 Enter bag weight:</div>
+  
+  <p style="font-size:0.8rem;opacity:0.6;margin-bottom:10px;text-align:center">
+    Ask passenger: <strong>"How heavy is your bag?"</strong>
+  </p>
+
+  <input type="hidden" id="current-bag-index" value="0"/>
+
+  <div style="display:flex;gap:8px;align-items:center">
+    <input id="weight-input" type="number" min="1" max="50" 
+      placeholder="e.g. 18"
+      style="flex:1;padding:12px;border-radius:10px;
+             border:2px solid rgba(255,255,255,0.2);
+             background:rgba(255,255,255,0.1);
+             color:white;font-size:1.4rem;font-weight:700;
+             text-align:center;outline:none;"/>
+    <span style="font-size:1.1rem;opacity:0.6">kg</span>
   </div>
+  <button onclick="submitWeight()" style="
+    width:100%;margin-top:10px;padding:12px;
+    border-radius:10px;border:none;
+    background:#f59e0b;color:#1a1a2e;
+    font-size:1rem;font-weight:700;cursor:pointer;
+  ">✅ Confirm Weight</button>
+  <div id="weight-feedback" style="
+    display:none;margin-top:8px;padding:8px;
+    border-radius:8px;text-align:center;font-size:0.85rem;
+  "></div>
+</div>
+
+<!-- Carry-on Weight Input -->
+<div class="weight-box" id="carry-on-box" style="display:none">
+  <div style="font-size:0.9rem;font-weight:700;text-align:center;
+              margin-bottom:10px;color:#fde68a;">
+    🎒 Enter carry-on weight:
+  </div>
+  <p style="font-size:0.8rem;opacity:0.6;margin-bottom:10px;text-align:center">
+    Ask passenger: <strong>"How heavy is your carry-on?"</strong>
+  </p>
+  <div style="display:flex;gap:8px;align-items:center">
+    <input id="carryon-input" type="number" min="1" max="20"
+      placeholder="e.g. 7"
+      style="flex:1;padding:12px;border-radius:10px;
+             border:2px solid rgba(255,255,255,0.2);
+             background:rgba(255,255,255,0.1);
+             color:white;font-size:1.4rem;font-weight:700;
+             text-align:center;outline:none;"/>
+    <span style="font-size:1.1rem;opacity:0.6">kg</span>
+  </div>
+  <button onclick="submitCarryOn()" style="
+    width:100%;margin-top:10px;padding:12px;
+    border-radius:10px;border:none;
+    background:#60a5fa;color:#1a1a2e;
+    font-size:1rem;font-weight:700;cursor:pointer;
+  ">✅ Confirm Carry-on Weight</button>
+</div>
+
+<!-- Overweight Alert -->
+<div id="overweight-alert" style="display:none;
+  margin: 0 14px 14px;
+  padding: 16px;
+  background: rgba(239,68,68,0.2);
+  border: 2px solid #ef4444;
+  border-radius: 18px;
+  text-align: center;
+">
+  <div style="font-size:2rem">⚠️</div>
+  <div style="font-weight:700;color:#fca5a5;font-size:1rem;margin:6px 0">
+    BAG IS OVERWEIGHT!
+  </div>
+  <div id="overweight-details" style="font-size:0.85rem;opacity:0.8;margin-bottom:12px"></div>
+  <div style="font-size:0.85rem;opacity:0.7;margin-bottom:12px">
+    Tell passenger:<br>
+    <strong style="color:#fca5a5">"Your bag exceeds the 23kg limit.<br>
+    There will be an additional fee."</strong>
+  </div>
+  <button onclick="confirmOverweightFee()" style="
+    width:100%;padding:12px;border-radius:10px;
+    border:none;background:#ef4444;color:white;
+    font-size:0.95rem;font-weight:700;cursor:pointer;
+  ">💰 Passenger Pays Fee → Continue</button>
+</div>
 
   <!-- Seat options -->
   <div class="seat-options" id="seat-options">
@@ -517,6 +590,107 @@
     };
     clerkAction(checkActions[currentSpellingField], { answer });
   }
+
+// Weight submission
+// Weight submission
+function submitWeight() {
+  const weight = parseInt(document.getElementById("weight-input").value);
+  if (!weight || weight < 1) { showToast("Enter a valid weight!", "red"); return; }
+  const bagIndex = parseInt(document.getElementById("current-bag-index").value || "0");
+  socket.emit("clerk_action", { 
+    action: "confirm_bag_weight", 
+    data: { weight, bagIndex } 
+  });
+}
+
+function submitCarryOn() {
+  const weight = parseInt(document.getElementById("carryon-input").value);
+  if (!weight || weight < 1) { showToast("Enter a valid weight!", "red"); return; }
+  socket.emit("clerk_action", {
+    action: "confirm_carry_on_weight",
+    data: { weight }
+  });
+}
+
+function confirmOverweightFee() {
+  const feeText = document.getElementById("overweight-details").textContent;
+  const feeMatch = feeText.match(/\$(\d+)/);
+  const fee = feeMatch ? parseInt(feeMatch[1]) : 0;
+  socket.emit("clerk_action", {
+    action: "overweight_fee_paid",
+    data: { fee }
+  });
+  document.getElementById("overweight-alert").style.display = "none";
+  showToast("💰 Fee paid! Continue check-in.", "green");
+}
+
+// Socket events for luggage
+socket.on("enter_bag_weight", ({ bagNumber, totalBags, hasCarryOn, bagIndex }) => {
+  const box = document.getElementById("weight-box");
+  const title = document.getElementById("weight-box-title");
+  const idx = document.getElementById("current-bag-index");
+
+  box.style.display = "block";
+  idx.value = bagIndex || 0;
+
+  if (totalBags === 2) {
+    title.textContent = `🧳 Enter weight for Bag ${bagNumber} of ${totalBags}:`;
+  } else {
+    title.textContent = `🧳 Enter bag weight:`;
+  }
+
+  document.getElementById("weight-input").value = "";
+  document.getElementById("weight-feedback").style.display = "none";
+  showToast(`🧳 Ask passenger how heavy bag ${bagNumber} is!`, "green");
+});
+
+socket.on("enter_carry_on_weight", ({ carryOnWeight }) => {
+  document.getElementById("weight-box").style.display = "none";
+  document.getElementById("carry-on-box").style.display = "block";
+  showToast("🎒 Ask passenger how heavy their carry-on is!", "green");
+});
+
+socket.on("weight_result", ({ correct, weight, bagIndex }) => {
+  const feedback = document.getElementById("weight-feedback");
+  feedback.style.display = "block";
+  if (correct) {
+    feedback.style.background = "rgba(52,211,153,0.2)";
+    feedback.style.color = "#6ee7b7";
+    feedback.textContent = `✅ Correct! ${weight}kg confirmed!`;
+    document.getElementById("weight-input").value = "";
+    setTimeout(() => {
+      document.getElementById("weight-box").style.display = "none";
+      feedback.style.display = "none";
+    }, 1500);
+  } else {
+    feedback.style.background = "rgba(239,68,68,0.2)";
+    feedback.style.color = "#fca5a5";
+    feedback.textContent = `❌ Wrong weight! Try again!`;
+    document.getElementById("weight-input").value = "";
+  }
+});
+
+socket.on("carry_on_result", ({ correct, weight }) => {
+  if (correct) {
+    document.getElementById("carry-on-box").style.display = "none";
+    showToast(`✅ Carry-on ${weight}kg confirmed!`, "green");
+  } else {
+    showToast("❌ Wrong weight! Try again!", "red");
+    document.getElementById("carryon-input").value = "";
+  }
+});
+
+socket.on("bag_overweight", ({ weight, limit, fee, bagNumber }) => {
+  document.getElementById("weight-box").style.display = "none";
+  const alert = document.getElementById("overweight-alert");
+  alert.style.display = "block";
+  document.getElementById("overweight-details").innerHTML = `
+    Bag ${bagNumber} weighs <strong style="color:#fca5a5">${weight}kg</strong><br>
+    Limit is <strong>${limit}kg</strong><br>
+    Overweight fee: <strong style="color:#fca5a5">$${fee}</strong>
+  `;
+  showToast(`⚠️ Bag ${bagNumber} is overweight!`, "red");
+});
 
   function unlockNextButton(field) {
     const order = ["firstName","lastName","age","flightNum","passportNo","passport"];

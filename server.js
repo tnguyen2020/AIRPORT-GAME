@@ -62,6 +62,10 @@ function resetCheckin() {
     flightCorrect: false,
     askingPassportNo: false,
     passportNoCorrect: false,
+    bagsOnBelt: false,
+    overweightBag: false,
+    overweightFee: 0,
+    overweightFeePaid: false,
   };
   gameState.log = [];
   gameState.phase = "waiting";
@@ -156,6 +160,56 @@ socket.on("join_player", ({ name, savedRole }) => {
     const destination = destinations[Math.floor(Math.random() * destinations.length)];
     const seat        = (Math.floor(1 + Math.random() * 30)) + ["A","B","C","D","E","F"][Math.floor(Math.random()*6)];
 
+    // ── Random luggage scenario ──
+const scenarios = [
+  { 
+    type: "single",
+    bags: 1,
+    carryOn: false,
+    weights: [Math.floor(10 + Math.random() * 13)], // 10-22kg (normal)
+    description: "1 checked bag"
+  },
+  { 
+    type: "double",
+    bags: 2,
+    carryOn: false,
+    weights: [
+      Math.floor(10 + Math.random() * 13), // 10-22kg
+      Math.floor(10 + Math.random() * 13), // 10-22kg
+    ],
+    description: "2 checked bags"
+  },
+  { 
+    type: "carryon",
+    bags: 1,
+    carryOn: true,
+    weights: [Math.floor(10 + Math.random() * 13)], // 10-22kg
+    carryOnWeight: Math.floor(5 + Math.random() * 5), // 5-9kg
+    description: "1 checked bag + 1 carry-on"
+  },
+  { 
+    type: "overweight",
+    bags: 1,
+    carryOn: false,
+    weights: [Math.floor(24 + Math.random() * 8)], // 24-31kg OVERWEIGHT!
+    description: "1 overweight bag",
+    overweight: true
+  },
+  { 
+    type: "double_overweight",
+    bags: 2,
+    carryOn: false,
+    weights: [
+      Math.floor(24 + Math.random() * 8), // overweight
+      Math.floor(10 + Math.random() * 13), // normal
+    ],
+    description: "2 bags, 1 overweight",
+    overweight: true
+  },
+];
+
+const luggage = scenarios[Math.floor(Math.random() * scenarios.length)];
+
     gameState.passengers[socket.id] = {
       name: name || "Alex",
       identity: {
@@ -168,6 +222,7 @@ socket.on("join_player", ({ name, savedRole }) => {
         destination,
         seat,
       },
+      luggage,
       items: {
         passport: { label: "Passport", emoji: "🛂", owned: true, sent: false },
         luggage:  { label: "Luggage",  emoji: "🧳", owned: true, sent: false },
@@ -338,20 +393,113 @@ case "check_passport":
   }
   broadcastAll();
   break;
-      case "confirm_bag_weight":
-        ci.bagsConfirmed = true;
-        ci.bagCount = 1;
-        ci.clerkEnteredWeight = data.weight;
-        const isCorrect = data.weight === ci.bagWeight;
-        if (isCorrect) {
-          addLog(`✅ Clerk confirmed bag weight: ${data.weight}kg`, "success");
-          io.to(socket.id).emit("weight_result", { correct: true, weight: data.weight });
-        } else {
-          addLog(`❌ Wrong weight! Passenger said ${ci.bagWeight}kg, clerk typed ${data.weight}kg`, "warning");
-          io.to(socket.id).emit("weight_result", { correct: false, correct_weight: ci.bagWeight, entered: data.weight });
-          ci.bagsConfirmed = false;
-        }
-        break;
+        case "confirm_bag_weight":
+          const pDataBag = Object.values(gameState.passengers)[0];
+          const pLuggage = pDataBag?.luggage;
+          const bagIndex = data.bagIndex || 0;
+          const correctWeight = pLuggage?.weights[bagIndex];
+          const isCorrectWeight = data.weight === correctWeight;
+          const WEIGHT_LIMIT = 23;
+
+          if (isCorrectWeight) {
+            addLog(`✅ Bag ${bagIndex + 1} weight confirmed: ${data.weight}kg`, "success");
+            
+            // Check if overweight
+            if (data.weight > WEIGHT_LIMIT) {
+              ci.overweightBag = true;
+              ci.overweightFee = (data.weight - WEIGHT_LIMIT) * 10; // \$10 per kg
+              addLog(`⚠️ BAG OVERWEIGHT! ${data.weight}kg exceeds 23kg limit!`, "warning");
+              io.to(socket.id).emit("bag_overweight", { 
+                weight: data.weight,
+                limit: WEIGHT_LIMIT,
+                fee: ci.overweightFee,
+                bagNumber: bagIndex + 1
+              });
+              // Notify passenger
+              const passengerSocket = Object.entries(gameState.roles)
+                .find(([,r]) => r === "passenger");
+              if (passengerSocket) {
+                io.to(passengerSocket[0]).emit("passenger_overweight_notice", {
+                  weight: data.weight,
+                  fee: ci.overweightFee
+                });
+              }
+            }
+
+            // Check if need second bag weight
+            if (pLuggage.bags === 2 && bagIndex === 0) {
+              // Need to weigh second bag
+              io.to(socket.id).emit("enter_bag_weight", {
+                bagNumber: 2,
+                totalBags: 2,
+                hasCarryOn: pLuggage.carryOn,
+                bagIndex: 1
+              });
+              // Tell passenger to read second bag
+              const passengerSocket2 = Object.entries(gameState.roles)
+                .find(([,r]) => r === "passenger");
+              if (passengerSocket2) {
+                io.to(passengerSocket2[0]).emit("show_luggage_info", {
+                  luggage: pLuggage,
+                  bagIndex: 1
+                });
+              }
+            } else if (pLuggage.carryOn && bagIndex === 0) {
+              // Need carry-on weight
+              io.to(socket.id).emit("enter_carry_on_weight", {
+                carryOnWeight: pLuggage.carryOnWeight
+              });
+            } else {
+              // All bags done!
+              ci.bagsConfirmed = true;
+              addLog(`✅ All bags processed!`, "success");
+            }
+            
+          } else {
+            addLog(`❌ Wrong weight! Expected ${correctWeight}kg, got ${data.weight}kg`, "warning");
+            io.to(socket.id).emit("weight_result", { 
+              correct: false, 
+              correct_weight: correctWeight, 
+              entered: data.weight 
+            });
+          }
+
+          if (isCorrectWeight) {
+            io.to(socket.id).emit("weight_result", { 
+              correct: true, 
+              weight: data.weight,
+              bagIndex 
+            });
+          }
+          broadcastAll();
+          break;
+
+        case "confirm_carry_on_weight":
+          const pDataCarry = Object.values(gameState.passengers)[0];
+          const correctCarryWeight = pDataCarry?.luggage?.carryOnWeight;
+          
+          if (data.weight === correctCarryWeight) {
+            ci.bagsConfirmed = true;
+            addLog(`✅ Carry-on weight confirmed: ${data.weight}kg`, "success");
+            io.to(socket.id).emit("carry_on_result", { correct: true, weight: data.weight });
+          } else {
+            addLog(`❌ Wrong carry-on weight!`, "warning");
+            io.to(socket.id).emit("carry_on_result", { correct: false });
+          }
+          broadcastAll();
+          break;
+
+        case "overweight_fee_paid":
+          ci.overweightFeePaid = true;
+          addLog(`💰 Overweight fee paid: 
+        $$
+        {data.fee}`, "success");
+          // Now can confirm bags
+          if (!ci.bagsConfirmed) {
+            ci.bagsConfirmed = true;
+          }
+          broadcastAll();
+          break;
       case "request_passport":
         ci.passportRequested = true;
         addLog("🧑‍💼 Clerk: May I see your passport please?", "action");
@@ -426,20 +574,45 @@ case "check_passport":
               item: item,
             });
           }
-          } else if (data.itemKey === "luggage" && ci.bagsRequested && !ci.bagsConfirmed) {
-    item.sent = true;
-    ci.bagsOnBelt = true;
-    ci.bagWeight = Math.floor(10 + Math.random() * 13); // 10–22 kg
-    addLog(`🧳 Passenger puts luggage on belt`, "action");
+          } else if (data.itemKey === "luggage" && ci.bagsRequested && !ci.bagsOnBelt) {
+  item.sent = true;
+  ci.bagsOnBelt = true;
+  const pLuggage = pData.luggage;
+  
+  addLog(`🧳 Passenger puts luggage on belt`, "action");
 
-    // Send weight ONLY to passenger screen
-    socket.emit("show_bag_weight", { weight: ci.bagWeight });
+  // Send luggage info to passenger to read aloud
+  socket.emit("show_luggage_info", { 
+    luggage: pLuggage,
+    bagIndex: 0  // first bag
+  });
 
-    // Tell clerk to enter weight
-    if (gameState.clerk) {
-      io.to(gameState.clerk).emit("enter_bag_weight");
-    }
-  } else {
+  // Tell clerk to enter weight for first bag
+  if (gameState.clerk) {
+    io.to(gameState.clerk).emit("enter_bag_weight", {
+      bagNumber: 1,
+      totalBags: pLuggage.bags,
+      hasCarryOn: pLuggage.carryOn,
+    });
+  }
+
+} else if (data.itemKey === "carryOn" && ci.bagsRequested && ci.bagsOnBelt) {
+  item.sent = true;
+  const pLuggage = pData.luggage;
+
+  addLog(`🎒 Passenger puts carry-on on belt`, "action");
+
+  socket.emit("show_luggage_info", {
+    luggage: pLuggage,
+    bagIndex: "carryOn"
+  });
+
+  if (gameState.clerk) {
+    io.to(gameState.clerk).emit("enter_carry_on_weight", {
+      carryOnWeight: pLuggage.carryOnWeight,
+    });
+  }
+} else {
           // Wrong item
           socket.emit("item_rejected", {
             itemKey: data.itemKey,
