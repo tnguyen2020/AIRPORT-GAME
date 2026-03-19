@@ -8,6 +8,10 @@ const io = new Server(server);
 
 app.use(express.static("public"));
 
+app.get("/", (req, res) => {
+  res.redirect("/host.html");
+});
+
 // ── Game State ──────────────────────────────────────────────
 const gameState = {
   phase: "waiting", // waiting | checkin | complete
