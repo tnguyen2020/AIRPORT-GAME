@@ -524,6 +524,10 @@ $$
     if (checkin.flightCorrect)                                   setField("flightNum", "confirmed");
     if (checkin.askingPassportNo && !checkin.passportNoCorrect) setField("passportNo","asking");
     if (checkin.passportNoCorrect)                               setField("passportNo","confirmed");
+    if (checkin.askingDestination && !checkin.destinationCorrect) 
+  setField("destination", "asking");
+if (checkin.destinationCorrect)                               
+  setField("destination", "confirmed");
   }
 
   function setField(name, status) {
@@ -593,6 +597,9 @@ $$
     } else if (ci.askingPassportNo && !ci.passportNoCorrect) {
       el.className = "instruction request";
       el.textContent = "🛂 Read your PASSPORT NUMBER out loud! Spell each character!";
+    }  else if (checkin.askingDestination && !checkin.destinationCorrect) {
+      el.className = "instruction request";
+      el.textContent = "🌍 Say your DESTINATION out loud!";
     } else if (ci.passportRequested && !ci.passportReceived) {
       el.className = "instruction request";
       el.textContent = "🛂 Hand over your PASSPORT — tap it below!";

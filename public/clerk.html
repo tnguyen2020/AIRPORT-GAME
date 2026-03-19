@@ -325,6 +325,16 @@
       </div>
     </button>
 
+    <!-- Ask Destination -->
+<button class="action-btn" id="btn-destination" 
+        onclick="askDestination()" disabled>
+  <span class="btn-emoji">🌍</span>
+  <div class="btn-text">
+    Ask Destination
+    <div class="btn-sublabel">"Where are you heading today?"</div>
+  </div>
+</button>
+
     <!-- Ask for physical passport -->
     <button class="action-btn" id="btn-passport" onclick="clerkAction('request_passport')" disabled>
       <span class="btn-emoji">📋</span>
@@ -374,6 +384,68 @@
     </div>
     <div class="spelling-feedback" id="spelling-feedback"></div>
   </div>
+
+  <!-- Destination Section -->
+<div id="destination-section" style="display:none;
+  margin: 0 14px 14px;
+  background: rgba(96,165,250,0.1);
+  border: 2px solid #60a5fa;
+  border-radius: 18px;
+  padding: 16px;
+">
+  <h4 style="text-align:center;color:#bfdbfe;margin-bottom:12px;font-size:0.9rem">
+    🌍 Where is the passenger heading?
+  </h4>
+
+  <!-- Option A: Type it in -->
+  <div id="dest-type-mode">
+    <p style="font-size:0.78rem;opacity:0.6;text-align:center;margin-bottom:8px">
+      Type what the passenger says:
+    </p>
+    <div style="display:flex;gap:8px">
+      <input id="destination-input" type="text"
+        placeholder="e.g. London Heathrow"
+        autocomplete="off" autocorrect="off"
+        style="
+          flex:1; padding:12px; border-radius:10px;
+          border:2px solid rgba(255,255,255,0.2);
+          background:rgba(255,255,255,0.1);
+          color:white; font-size:0.95rem; outline:none;
+        "
+      />
+      <button onclick="submitDestinationTyped()" style="
+        padding:12px 14px; border-radius:10px;
+        border:none; background:#60a5fa;
+        color:#1a1a2e; font-weight:700; cursor:pointer;
+      ">✓</button>
+    </div>
+
+    <!-- divider -->
+    <div style="
+      display:flex;align-items:center;gap:8px;
+      margin:12px 0;opacity:0.4;font-size:0.75rem;
+    ">
+      <div style="flex:1;height:1px;background:rgba(255,255,255,0.2)"></div>
+      OR CHOOSE
+      <div style="flex:1;height:1px;background:rgba(255,255,255,0.2)"></div>
+    </div>
+
+    <!-- Option B: 3 choices -->
+    <p style="font-size:0.78rem;opacity:0.6;text-align:center;margin-bottom:8px">
+      Pick the destination the passenger said:
+    </p>
+    <div id="dest-choices" style="
+      display:flex;flex-direction:column;gap:8px;
+    "></div>
+  </div>
+
+  <!-- Feedback -->
+  <div id="dest-feedback" style="
+    display:none;margin-top:10px;
+    padding:10px;border-radius:10px;
+    text-align:center;font-size:0.88rem;
+  "></div>
+</div>
 
   <!-- Weight input -->
  <!-- Weight Input Section -->
@@ -591,7 +663,72 @@
     clerkAction(checkActions[currentSpellingField], { answer });
   }
 
-// Weight submission
+function askDestination() {
+  socket.emit("clerk_action", { action: "ask_destination" });
+  document.getElementById("btn-destination").className = "action-btn done";
+  document.getElementById("btn-destination").disabled = true;
+  document.getElementById("destination-section").style.display = "block";
+  showToast("🌍 Ask the passenger their destination!", "green");
+}
+
+function submitDestinationTyped() {
+  const dest = document.getElementById("destination-input").value.trim();
+  if (!dest) { showToast("Please type a destination!", "red"); return; }
+  socket.emit("clerk_action", {
+    action: "confirm_destination",
+    data: { destination: dest }
+  });
+}
+
+function submitDestinationChoice(dest) {
+  socket.emit("clerk_action", {
+    action: "confirm_destination",
+    data: { destination: dest }
+  });
+}
+
+socket.on("destination_choices", ({ correct, choices }) => {
+  // Build 3 choice buttons
+  // (correct answer + 2 random wrong ones, shuffled)
+  const choicesDiv = document.getElementById("dest-choices");
+  choicesDiv.innerHTML = "";
+  choices.forEach(dest => {
+    const btn = document.createElement("button");
+    btn.textContent = dest;
+    btn.style.cssText = `
+      padding:12px;border-radius:10px;
+      border:2px solid rgba(255,255,255,0.15);
+      background:rgba(255,255,255,0.07);
+      color:white;font-size:0.9rem;
+      font-weight:600;cursor:pointer;
+      text-align:left;
+    `;
+    btn.onclick = () => submitDestinationChoice(dest);
+    choicesDiv.appendChild(btn);
+  });
+});
+
+socket.on("destination_result", ({ correct, destination }) => {
+  const feedback = document.getElementById("dest-feedback");
+  feedback.style.display = "block";
+  if (correct) {
+    feedback.style.background = "rgba(52,211,153,0.2)";
+    feedback.style.color = "#6ee7b7";
+    feedback.textContent = `✅ Correct! Destination: ${destination}`;
+    setTimeout(() => {
+      document.getElementById("destination-section").style.display = "none";
+      feedback.style.display = "none";
+      // Unlock passport button
+      unlockNextButton("destination");
+    }, 1500);
+  } else {
+    feedback.style.background = "rgba(239,68,68,0.2)";
+    feedback.style.color = "#fca5a5";
+    feedback.textContent = `❌ Wrong destination! Try again!`;
+    document.getElementById("destination-input").value = "";
+  }
+});
+
 // Weight submission
 function submitWeight() {
   const weight = parseInt(document.getElementById("weight-input").value);
@@ -692,33 +829,33 @@ socket.on("bag_overweight", ({ weight, limit, fee, bagNumber }) => {
   showToast(`⚠️ Bag ${bagNumber} is overweight!`, "red");
 });
 
-  function unlockNextButton(field) {
-    const order = ["firstName","lastName","age","flightNum","passportNo","passport"];
-    const btnMap = {
-      firstName:  "btn-firstname",
-      lastName:   "btn-lastname",
-      age:        "btn-age",
-      flightNum:  "btn-flightnum",
-      passportNo: "btn-passportno",
-      passport:   "btn-passport",
-    };
-    const nextMap = {
-      firstName:  "lastName",
-      lastName:   "age",
-      age:        "flightNum",
-      flightNum:  "passportNo",
-      passportNo: "passport",
-    };
-    const next = nextMap[field];
-    if (next) {
-      const nextBtn = document.getElementById(btnMap[next]);
-      if (nextBtn) {
-        nextBtn.className = "action-btn available";
-        nextBtn.disabled = false;
-      }
+function unlockNextButton(field) {
+  const nextMap = {
+    firstName:   "lastName",
+    lastName:    "age",
+    age:         "flightNum",
+    flightNum:   "passportNo",
+    passportNo:  "destination",   // ← ADD THIS
+    destination: "passport",      // ← ADD THIS
+  };
+  const btnMap = {
+    firstName:   "btn-firstname",
+    lastName:    "btn-lastname",
+    age:         "btn-age",
+    flightNum:   "btn-flightnum",
+    passportNo:  "btn-passportno",
+    destination: "btn-destination",  // ← ADD THIS
+    passport:    "btn-passport",
+  };
+  const next = nextMap[field];
+  if (next) {
+    const nextBtn = document.getElementById(btnMap[next]);
+    if (nextBtn) {
+      nextBtn.className = "action-btn available";
+      nextBtn.disabled = false;
     }
   }
-
+}
   // ── Clerk actions ──
   function clerkAction(action, data = {}) {
     socket.emit("clerk_action", { action, data });
@@ -812,6 +949,9 @@ socket.on("bag_overweight", ({ weight, limit, fee, bagNumber }) => {
     } else if (!ci.passportNoCorrect) {
       el.className = "instruction action";
       el.textContent = "🛂 Ask for their passport number!";
+     } else if (!ci.destinationCorrect) {
+      el.className = "instruction action";
+      el.textContent = "🌍 Ask where the passenger is heading!";
     } else if (!ci.passportRequested) {
       el.className = "instruction action";
       el.textContent = "📋 Ask to see their physical passport!";
