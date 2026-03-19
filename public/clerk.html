@@ -38,7 +38,6 @@
       line-height: 1.5;
       text-align: center;
       font-weight: 500;
-      transition: all 0.4s;
     }
     .instruction.waiting { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7); }
     .instruction.action  { background: rgba(245,158,11,0.2); border: 1px solid #f59e0b; color: #fde68a; }
@@ -52,32 +51,95 @@
       opacity: 0.4;
     }
 
-    /* Action Buttons */
+    /* ── Spelling Input ── */
+    .spelling-box {
+      display: none;
+      margin: 0 14px 14px;
+      background: rgba(245,158,11,0.1);
+      border: 2px solid #f59e0b;
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .spelling-box.show { display: block; }
+    .spelling-box h4 {
+      font-size: 0.85rem;
+      margin-bottom: 10px;
+      text-align: center;
+      color: #fde68a;
+    }
+    .spelling-input-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .spelling-input {
+      flex: 1;
+      padding: 12px 14px;
+      border-radius: 10px;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 1.1rem;
+      font-weight: 600;
+      outline: none;
+    }
+    .spelling-input:focus { border-color: #f59e0b; }
+    .spelling-submit {
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: none;
+      background: #f59e0b;
+      color: #1a1a2e;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .spelling-submit:active { transform: scale(0.95); }
+    .spelling-feedback {
+      margin-top: 8px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      text-align: center;
+      display: none;
+    }
+    .spelling-feedback.correct { 
+      display: block; 
+      background: rgba(52,211,153,0.2); 
+      color: #6ee7b7; 
+      border: 1px solid #34d399;
+    }
+    .spelling-feedback.wrong { 
+      display: block; 
+      background: rgba(239,68,68,0.2); 
+      color: #fca5a5; 
+      border: 1px solid #ef4444;
+    }
+
+    /* ── Buttons ── */
     .actions {
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       padding: 6px 14px 14px;
     }
     .action-btn {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       background: rgba(255,255,255,0.07);
       border: 2px solid rgba(255,255,255,0.1);
-      border-radius: 18px;
-      padding: 16px 20px;
+      border-radius: 16px;
+      padding: 14px 16px;
       cursor: pointer;
       transition: all 0.15s;
       color: white;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       text-align: left;
       width: 100%;
     }
-    .action-btn:active:not(:disabled) {
-      transform: scale(0.96);
-    }
+    .action-btn:active:not(:disabled) { transform: scale(0.96); }
     .action-btn.available {
       border-color: #f59e0b;
       background: rgba(245,158,11,0.15);
@@ -88,37 +150,59 @@
       to   { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
     }
     .action-btn.done {
-      opacity: 0.35;
+      opacity: 0.3;
       cursor: not-allowed;
       border-color: transparent;
+      background: rgba(52,211,153,0.05);
     }
     .action-btn:disabled { cursor: not-allowed; }
-    .btn-emoji { font-size: 2rem; }
+    .btn-emoji { font-size: 1.8rem; }
     .btn-text { flex: 1; }
-    .btn-label { font-size: 0.75rem; opacity: 0.5; font-weight: 400; margin-top: 2px; }
+    .btn-sublabel { font-size: 0.72rem; opacity: 0.5; font-weight: 400; margin-top: 2px; }
 
-    /* Seat selector */
+    /* Weight input */
+    .weight-box {
+      display: none;
+      margin: 0 14px 14px;
+      background: rgba(245,158,11,0.1);
+      border: 2px solid #f59e0b;
+      border-radius: 18px;
+      padding: 16px;
+    }
+    .weight-box.show { display: block; }
+
+    /* Seat options */
     .seat-options {
       display: none;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
       padding: 0 14px 14px;
     }
     .seat-options.show { display: flex; }
     .seat-btn {
-      padding: 14px;
-      border-radius: 14px;
+      padding: 12px;
+      border-radius: 12px;
       border: 2px solid rgba(255,255,255,0.15);
       background: rgba(255,255,255,0.07);
       color: white;
-      font-size: 1rem;
+      font-size: 0.95rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.15s;
     }
-    .seat-btn:active { transform: scale(0.96); background: rgba(255,255,255,0.15); }
+    .seat-btn:active { transform: scale(0.96); }
 
-    /* Received item popup */
+    /* Waiting screen */
+    .waiting-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      opacity: 0.6;
+    }
+
+    /* Popup */
     .item-popup {
       position: fixed;
       top: 20px; left: 50%;
@@ -131,7 +215,6 @@
       font-weight: 700;
       transition: transform 0.4s;
       z-index: 999;
-      text-align: center;
     }
     .item-popup.show { transform: translateX(-50%) translateY(0); }
 
@@ -141,28 +224,33 @@
       bottom: 24px; left: 50%;
       transform: translateX(-50%) translateY(80px);
       background: rgba(239,68,68,0.9);
-      color: white;
-      padding: 12px 22px;
-      border-radius: 12px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      transition: transform 0.3s;
-      z-index: 999;
+      color: white; padding: 12px 22px;
+      border-radius: 12px; font-size: 0.88rem;
+      font-weight: 600; transition: transform 0.3s; z-index: 999;
     }
     .toast.show { transform: translateX(-50%) translateY(0); }
     .toast.green { background: rgba(52,211,153,0.9); }
 
-    /* Waiting screen */
-    .waiting-screen {
-      flex: 1;
+    /* Score tracker */
+    .score-bar {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      opacity: 0.6;
+      gap: 8px;
+      padding: 8px 14px;
+      flex-wrap: wrap;
     }
-    .waiting-screen .big { font-size: 4rem; }
+    .score-pill {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .score-pill.correct { background: rgba(52,211,153,0.15); border-color: #34d399; }
+    .score-pill.wrong   { background: rgba(239,68,68,0.15);  border-color: #ef4444; }
   </style>
 </head>
 <body>
@@ -176,106 +264,132 @@
   ✈️ Waiting for passenger to arrive...
 </div>
 
-<!-- Waiting for passenger -->
+<!-- Score bar -->
+<div class="score-bar" id="score-bar"></div>
+
+<!-- Waiting -->
 <div class="waiting-screen" id="waiting-screen">
-  <div class="big">⏳</div>
+  <div style="font-size:4rem">⏳</div>
   <p>Waiting for passenger to join...</p>
 </div>
 
-<!-- Main actions (hidden until game starts) -->
+<!-- Main -->
 <div id="main-actions" style="display:none; flex-direction:column; flex:1;">
 
-  <p class="section-title">Your Actions</p>
+  <p class="section-title">Your Actions — Follow the order!</p>
 
   <div class="actions">
 
-    <!-- Step 1: Greet & ask for passport -->
-    <button class="action-btn available" id="btn-passport" onclick="clerkAction('request_passport')">
-      <span class="btn-emoji">🛂</span>
+    <!-- Ask First Name -->
+    <button class="action-btn available" id="btn-firstname" onclick="askSpelling('firstName')">
+      <span class="btn-emoji">👤</span>
       <div class="btn-text">
-        Ask for Passport
-        <div class="btn-label">"May I see your passport please?"</div>
+        Ask First Name
+        <div class="btn-sublabel">"What is your first name?"</div>
       </div>
     </button>
 
-    <!-- Step 2: Passport result -->
+    <!-- Ask Last Name -->
+    <button class="action-btn" id="btn-lastname" onclick="askSpelling('lastName')" disabled>
+      <span class="btn-emoji">👤</span>
+      <div class="btn-text">
+        Ask Last Name
+        <div class="btn-sublabel">"What is your last name?"</div>
+      </div>
+    </button>
+
+    <!-- Ask Age -->
+    <button class="action-btn" id="btn-age" onclick="askSpelling('age')" disabled>
+      <span class="btn-emoji">🎂</span>
+      <div class="btn-text">
+        Ask Age
+        <div class="btn-sublabel">"How old are you?"</div>
+      </div>
+    </button>
+
+    <!-- Ask Flight Number -->
+    <button class="action-btn" id="btn-flightnum" onclick="askSpelling('flightNum')" disabled>
+      <span class="btn-emoji">✈️</span>
+      <div class="btn-text">
+        Ask Flight Number
+        <div class="btn-sublabel">"What is your flight number?"</div>
+      </div>
+    </button>
+
+    <!-- Ask Passport Number -->
+    <button class="action-btn" id="btn-passportno" onclick="askSpelling('passportNo')" disabled>
+      <span class="btn-emoji">🛂</span>
+      <div class="btn-text">
+        Ask Passport Number
+        <div class="btn-sublabel">"What is your passport number?"</div>
+      </div>
+    </button>
+
+    <!-- Ask for physical passport -->
+    <button class="action-btn" id="btn-passport" onclick="clerkAction('request_passport')" disabled>
+      <span class="btn-emoji">📋</span>
+      <div class="btn-text">
+        Request Passport (Physical)
+        <div class="btn-sublabel">"May I see your passport please?"</div>
+      </div>
+    </button>
+
+    <!-- Passport valid -->
     <button class="action-btn" id="btn-passport-ok" onclick="clerkAction('passport_check_ok')" disabled>
       <span class="btn-emoji">✅</span>
       <div class="btn-text">
-        Passport is Valid
-        <div class="btn-label">"Thank you, everything looks good!"</div>
+        Passport Valid
+        <div class="btn-sublabel">"Thank you, everything looks good!"</div>
       </div>
     </button>
 
-    <!-- Step 3: Ask about bags -->
+    <!-- Ask bags -->
     <button class="action-btn" id="btn-bags" onclick="clerkAction('request_bags')" disabled>
       <span class="btn-emoji">🧳</span>
       <div class="btn-text">
         Ask About Luggage
-        <div class="btn-label">"How many bags are you checking in?"</div>
+        <div class="btn-sublabel">"How many bags are you checking in?"</div>
       </div>
     </button>
 
-    <!-- Step 3b: Enter bag weight -->
-<div id="weight-input-section" style="display:none;">
-  <div style="
-    background: rgba(245,158,11,0.15);
-    border: 2px solid #f59e0b;
-    border-radius: 18px;
-    padding: 20px;
-    margin: 0 14px;
-  ">
-    <p style="font-size:0.85rem;opacity:0.7;margin-bottom:10px;text-align:center">
-      🧳 Passenger put bag on belt!<br>
-      <strong>Ask them: "How heavy is your bag?"</strong><br>
-      Then type the weight they say:
-    </p>
-    <div style="display:flex;gap:10px;align-items:center">
-      <input 
-        id="weight-input"
-        type="number" 
-        min="1" 
-        max="50"
-        placeholder="e.g. 18"
-        style="
-          flex:1;
-          padding: 14px;
-          border-radius: 12px;
-          border: 2px solid rgba(255,255,255,0.2);
-          background: rgba(255,255,255,0.1);
-          color: white;
-          font-size: 1.5rem;
-          font-weight: 700;
-          text-align: center;
-          outline: none;
-        "
-      />
-      <span style="font-size:1.2rem;opacity:0.7">kg</span>
-    </div>
-    <button onclick="submitWeight()" style="
-      width:100%;
-      margin-top:12px;
-      padding:14px;
-      border-radius:12px;
-      border:none;
-      background:#f59e0b;
-      color:#1a1a2e;
-      font-size:1rem;
-      font-weight:700;
-      cursor:pointer;
-    ">✅ Confirm Weight</button>
-  </div>
-</div>
-
-    <!-- Step 4: Assign seat -->
+    <!-- Assign seat -->
     <button class="action-btn" id="btn-seat" onclick="showSeatOptions()" disabled>
       <span class="btn-emoji">💺</span>
       <div class="btn-text">
         Assign Seat
-        <div class="btn-label">"What type of seat would you prefer?"</div>
+        <div class="btn-sublabel">"What type of seat would you prefer?"</div>
       </div>
     </button>
 
+  </div>
+
+  <!-- Spelling input box -->
+  <div class="spelling-box" id="spelling-box">
+    <h4 id="spelling-prompt">Type what the passenger says:</h4>
+    <div class="spelling-input-row">
+      <input id="spelling-input" class="spelling-input" type="text" 
+             placeholder="Type answer here..."
+             autocomplete="off" autocorrect="off" autocapitalize="off"/>
+      <button class="spelling-submit" onclick="submitSpelling()">✓</button>
+    </div>
+    <div class="spelling-feedback" id="spelling-feedback"></div>
+  </div>
+
+  <!-- Weight input -->
+  <div class="weight-box" id="weight-box">
+    <p style="font-size:0.85rem;opacity:0.7;margin-bottom:10px;text-align:center">
+      🧳 Ask passenger: <strong>"How heavy is your bag?"</strong><br>Type the kg they say:
+    </p>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input id="weight-input" type="number" min="1" max="50" placeholder="e.g. 18"
+        style="flex:1;padding:12px;border-radius:10px;border:2px solid rgba(255,255,255,0.2);
+               background:rgba(255,255,255,0.1);color:white;font-size:1.4rem;font-weight:700;
+               text-align:center;outline:none;"/>
+      <span style="font-size:1.1rem;opacity:0.6">kg</span>
+    </div>
+    <button onclick="submitWeight()" style="width:100%;margin-top:10px;padding:12px;
+      border-radius:10px;border:none;background:#f59e0b;color:#1a1a2e;
+      font-size:1rem;font-weight:700;cursor:pointer;">✅ Confirm Weight</button>
   </div>
 
   <!-- Seat options -->
@@ -288,12 +402,7 @@
 
 </div>
 
-<!-- Item received popup -->
-<div class="item-popup" id="item-popup">
-  📥 Item received!
-</div>
-
-<!-- Toast -->
+<div class="item-popup" id="item-popup">📥 Item received!</div>
 <div class="toast" id="toast"></div>
 
 <script src="/socket.io/socket.io.js"></script>
@@ -304,13 +413,17 @@
 
   let checkin = {};
   let phase = "waiting";
+  let currentSpellingField = "";
+  let scores = { correct: 0, wrong: 0 };
 
-  socket.emit("join_player", { name });
+  socket.emit("join_player", { 
+    name, 
+    savedRole: sessionStorage.getItem("playerRole") 
+  });
 
   socket.on("joined", (data) => {
     if (data.role !== "clerk") {
       window.location.href = "/passenger.html";
-      return;
     }
   });
 
@@ -325,45 +438,120 @@
     updateButtons();
   });
 
-  socket.on("game_reset", () => {
-    window.location.reload();
+  socket.on("enter_bag_weight", () => {
+    document.getElementById("weight-box").classList.add("show");
+    showToast("🧳 Ask the passenger how heavy their bag is!", "green");
   });
 
+  socket.on("weight_result", ({ correct, weight, correct_weight, entered }) => {
+    if (correct) {
+      document.getElementById("weight-box").classList.remove("show");
+      showToast(`✅ Correct! ${weight}kg confirmed!`, "green");
+    } else {
+      showToast(`❌ Wrong! Try again!`, "red");
+      document.getElementById("weight-input").value = "";
+    }
+  });
+
+  socket.on("spelling_result", ({ field, correct, answer, hint }) => {
+    const feedback = document.getElementById("spelling-feedback");
+    if (correct) {
+      scores.correct++;
+      feedback.className = "spelling-feedback correct";
+      feedback.textContent = `✅ Correct! "${answer}"`;
+      document.getElementById("spelling-input").value = "";
+      setTimeout(() => {
+        document.getElementById("spelling-box").classList.remove("show");
+        feedback.className = "spelling-feedback";
+        unlockNextButton(field);
+      }, 1500);
+    } else {
+      scores.wrong++;
+      feedback.className = "spelling-feedback wrong";
+      feedback.textContent = `❌ Wrong spelling! ${hint || "Try again!"}`;
+      document.getElementById("spelling-input").value = "";
+    }
+    updateScoreBar();
+  });
+
+  socket.on("game_reset", () => window.location.reload());
+
+  // ── Spelling actions ──
+  function askSpelling(field) {
+    currentSpellingField = field;
+    const actions = {
+      firstName:  { action: "ask_firstname",  prompt: "Type the FIRST NAME the passenger says:" },
+      lastName:   { action: "ask_lastname",   prompt: "Type the LAST NAME the passenger says:" },
+      age:        { action: "ask_age",        prompt: "Type the AGE the passenger says:" },
+      flightNum:  { action: "ask_flightnum",  prompt: "Type the FLIGHT NUMBER the passenger says:" },
+      passportNo: { action: "ask_passport",   prompt: "Type the PASSPORT NUMBER (spell carefully!):" },
+    };
+    const a = actions[field];
+    if (!a) return;
+
+    clerkAction(a.action);
+    document.getElementById("spelling-prompt").textContent = a.prompt;
+    document.getElementById("spelling-box").classList.add("show");
+    document.getElementById("spelling-input").focus();
+    document.getElementById("spelling-feedback").className = "spelling-feedback";
+
+    // Mark button as done
+    const btnMap = {
+      firstName: "btn-firstname", lastName: "btn-lastname",
+      age: "btn-age", flightNum: "btn-flightnum", passportNo: "btn-passportno"
+    };
+    const btn = document.getElementById(btnMap[field]);
+    if (btn) { btn.className = "action-btn done"; btn.disabled = true; }
+  }
+
+  function submitSpelling() {
+    const answer = document.getElementById("spelling-input").value.trim();
+    if (!answer) { showToast("Please type an answer!", "red"); return; }
+    
+    const checkActions = {
+      firstName:  "check_firstname",
+      lastName:   "check_lastname",
+      age:        "check_age",
+      flightNum:  "check_flightnum",
+      passportNo: "check_passport",
+    };
+    clerkAction(checkActions[currentSpellingField], { answer });
+  }
+
+  function unlockNextButton(field) {
+    const order = ["firstName","lastName","age","flightNum","passportNo","passport"];
+    const btnMap = {
+      firstName:  "btn-firstname",
+      lastName:   "btn-lastname",
+      age:        "btn-age",
+      flightNum:  "btn-flightnum",
+      passportNo: "btn-passportno",
+      passport:   "btn-passport",
+    };
+    const nextMap = {
+      firstName:  "lastName",
+      lastName:   "age",
+      age:        "flightNum",
+      flightNum:  "passportNo",
+      passportNo: "passport",
+    };
+    const next = nextMap[field];
+    if (next) {
+      const nextBtn = document.getElementById(btnMap[next]);
+      if (nextBtn) {
+        nextBtn.className = "action-btn available";
+        nextBtn.disabled = false;
+      }
+    }
+  }
+
+  // ── Clerk actions ──
   function clerkAction(action, data = {}) {
     socket.emit("clerk_action", { action, data });
   }
 
-  function submitWeight() {
-  const input = document.getElementById("weight-input");
-  const weight = parseInt(input.value);
-  if (!weight || weight < 1 || weight > 50) {
-    showToast("Please enter a valid weight!", "red");
-    return;
-  }
-  socket.emit("clerk_action", { 
-    action: "confirm_bag_weight", 
-    data: { weight } 
-  });
-}
-
-socket.on("enter_bag_weight", () => {
-  document.getElementById("weight-input-section").style.display = "block";
-  showToast("🧳 Bag is on belt! Ask passenger for the weight!", "green");
-});
-
-socket.on("weight_result", ({ correct, weight, correct_weight, entered }) => {
-  if (correct) {
-    document.getElementById("weight-input-section").style.display = "none";
-    showToast(`✅ Correct! ${weight}kg confirmed!`, "green");
-  } else {
-    showToast(`❌ Wrong! Passenger said ${correct_weight}kg, you typed ${entered}kg. Try again!`, "red");
-    document.getElementById("weight-input").value = "";
-  }
-});
-
   function showSeatOptions() {
     document.getElementById("seat-options").classList.add("show");
-    showToast("Choose a seat type for the passenger!", "green");
   }
 
   function assignSeat(seatType) {
@@ -371,8 +559,14 @@ socket.on("weight_result", ({ correct, weight, correct_weight, entered }) => {
     document.getElementById("seat-options").classList.remove("show");
   }
 
+  function submitWeight() {
+    const weight = parseInt(document.getElementById("weight-input").value);
+    if (!weight || weight < 1) { showToast("Enter a valid weight!", "red"); return; }
+    socket.emit("clerk_action", { action: "confirm_bag_weight", data: { weight } });
+  }
+
+  // ── UI Updates ──
   function updateUI() {
-    // Show/hide waiting screen
     if (phase === "waiting") {
       document.getElementById("waiting-screen").style.display = "flex";
       document.getElementById("main-actions").style.display = "none";
@@ -380,7 +574,6 @@ socket.on("weight_result", ({ correct, weight, correct_weight, entered }) => {
       document.getElementById("waiting-screen").style.display = "none";
       document.getElementById("main-actions").style.display = "flex";
     }
-
     updateButtons();
     updateInstruction();
   }
@@ -388,63 +581,75 @@ socket.on("weight_result", ({ correct, weight, correct_weight, entered }) => {
   function updateButtons() {
     const ci = checkin;
 
-    // Passport button
-    const btnPassport = document.getElementById("btn-passport");
-    if (ci.passportRequested) {
-      btnPassport.className = "action-btn done";
-      btnPassport.disabled = true;
+    // Passport physical button
+    if (ci.passportNoCorrect && !ci.passportRequested) {
+      setBtn("btn-passport", "available");
+    } else if (ci.passportRequested) {
+      setBtn("btn-passport", "done");
     }
 
-    // Passport OK button
-    const btnOk = document.getElementById("btn-passport-ok");
+    // Passport ok button
     if (ci.passportReceived && !ci.passportValid) {
-      btnOk.className = "action-btn available";
-      btnOk.disabled = false;
+      setBtn("btn-passport-ok", "available");
     } else if (ci.passportValid) {
-      btnOk.className = "action-btn done";
-      btnOk.disabled = true;
+      setBtn("btn-passport-ok", "done");
     }
 
     // Bags button
-    const btnBags = document.getElementById("btn-bags");
     if (ci.passportValid && !ci.bagsRequested) {
-      btnBags.className = "action-btn available";
-      btnBags.disabled = false;
+      setBtn("btn-bags", "available");
     } else if (ci.bagsRequested) {
-      btnBags.className = "action-btn done";
-      btnBags.disabled = true;
+      setBtn("btn-bags", "done");
     }
 
     // Seat button
-    const btnSeat = document.getElementById("btn-seat");
     if (ci.bagsConfirmed && !ci.seatAssigned) {
-      btnSeat.className = "action-btn available";
-      btnSeat.disabled = false;
+      setBtn("btn-seat", "available");
     } else if (ci.seatAssigned) {
-      btnSeat.className = "action-btn done";
-      btnSeat.disabled = true;
+      setBtn("btn-seat", "done");
     }
+  }
+
+  function setBtn(id, status) {
+    const btn = document.getElementById(id);
+    if (!btn) return;
+    btn.className = "action-btn " + status;
+    btn.disabled = (status === "done");
   }
 
   function updateInstruction() {
     const el = document.getElementById("instruction");
     const ci = checkin;
-
     if (phase === "waiting") {
       el.className = "instruction waiting";
       el.textContent = "⏳ Waiting for passenger to join...";
+    } else if (!ci.firstNameCorrect) {
+      el.className = "instruction action";
+      el.textContent = "👋 Start by asking the passenger's first name!";
+    } else if (!ci.lastNameCorrect) {
+      el.className = "instruction action";
+      el.textContent = "👤 Ask for their last name!";
+    } else if (!ci.ageCorrect) {
+      el.className = "instruction action";
+      el.textContent = "🎂 Ask how old they are!";
+    } else if (!ci.flightCorrect) {
+      el.className = "instruction action";
+      el.textContent = "✈️ Ask for their flight number!";
+    } else if (!ci.passportNoCorrect) {
+      el.className = "instruction action";
+      el.textContent = "🛂 Ask for their passport number!";
     } else if (!ci.passportRequested) {
       el.className = "instruction action";
-      el.textContent = "👋 Greet the passenger and ask for their passport!";
+      el.textContent = "📋 Ask to see their physical passport!";
     } else if (!ci.passportReceived) {
       el.className = "instruction waiting";
       el.textContent = "⏳ Waiting for passenger to hand over passport...";
     } else if (!ci.passportValid) {
       el.className = "instruction action";
-      el.textContent = "🛂 Check the passport and confirm it's valid!";
+      el.textContent = "🔍 Check the passport and confirm it's valid!";
     } else if (!ci.bagsRequested) {
       el.className = "instruction action";
-      el.textContent = "🧳 Ask the passenger about their luggage!";
+      el.textContent = "🧳 Ask about their luggage!";
     } else if (!ci.bagsConfirmed) {
       el.className = "instruction waiting";
       el.textContent = "⏳ Waiting for passenger to put bags on belt...";
@@ -456,6 +661,21 @@ socket.on("weight_result", ({ correct, weight, correct_weight, entered }) => {
       el.textContent = "🎉 Check-in complete! Well done!";
     }
   }
+
+  function updateScoreBar() {
+    const bar = document.getElementById("score-bar");
+    bar.innerHTML = `
+      <div class="score-pill correct">✅ ${scores.correct} correct</div>
+      <div class="score-pill wrong">❌ ${scores.wrong} wrong</div>
+    `;
+  }
+
+  // Enter key for spelling
+  document.addEventListener("keyup", (e) => {
+    if (e.key === "Enter" && document.getElementById("spelling-box").classList.contains("show")) {
+      submitSpelling();
+    }
+  });
 
   function showPopup(msg) {
     const popup = document.getElementById("item-popup");

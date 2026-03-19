@@ -14,8 +14,6 @@
       display: flex;
       flex-direction: column;
     }
-
-    /* ── Header ── */
     header {
       background: rgba(255,255,255,0.07);
       padding: 14px 20px;
@@ -24,19 +22,91 @@
       justify-content: space-between;
       border-bottom: 1px solid rgba(255,255,255,0.08);
     }
-    header .role-tag {
+    .role-tag {
       background: #3b82f6;
       font-size: 0.75rem;
       font-weight: 700;
       padding: 4px 12px;
       border-radius: 12px;
+    }
+
+    /* ── Identity Card ── */
+    .id-card {
+      margin: 14px;
+      background: linear-gradient(135deg, #1e3a5f, #0a2342);
+      border: 2px solid rgba(96,208,245,0.4);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .id-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    .id-card-header .passport-emoji { font-size: 2rem; }
+    .id-card-header h3 { 
+      font-size: 0.8rem; 
+      text-transform: uppercase; 
+      letter-spacing: 2px; 
+      color: #60d0f5; 
+    }
+    .id-card-header p { font-size: 0.7rem; opacity: 0.5; margin-top: 2px; }
+
+    .id-fields {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .id-field {
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.08);
+      transition: all 0.3s;
+    }
+    .id-field.asking {
+      border-color: #f59e0b;
+      background: rgba(245,158,11,0.15);
+      animation: fieldGlow 1.5s infinite alternate;
+    }
+    .id-field.confirmed {
+      border-color: #34d399;
+      background: rgba(52,211,153,0.1);
+    }
+    @keyframes fieldGlow {
+      from { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+      to   { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+    }
+    .field-label {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.5;
+      margin-bottom: 4px;
+    }
+    .field-value {
+      font-size: 1.1rem;
+      font-weight: 700;
       letter-spacing: 0.5px;
     }
-    header h2 { font-size: 1rem; }
+    .id-field.asking .field-value {
+      color: #f59e0b;
+      font-size: 1.3rem;
+    }
+    .id-field.asking .field-label::after {
+      content: " ← READ THIS!";
+      color: #f59e0b;
+      font-weight: 700;
+    }
+    .full-width { grid-column: 1 / -1; }
 
-    /* ── Instruction banner ── */
+    /* ── Instruction ── */
     .instruction {
-      margin: 14px;
+      margin: 0 14px 14px;
       padding: 14px 16px;
       border-radius: 14px;
       font-size: 0.9rem;
@@ -46,18 +116,33 @@
       transition: all 0.4s;
     }
     .instruction.waiting { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7); }
-    .instruction.request { background: rgba(245,158,11,0.2); border: 1px solid #f59e0b; color: #fde68a;
-                            animation: glow 1.5s infinite alternate; }
+    .instruction.request { 
+      background: rgba(245,158,11,0.2); 
+      border: 1px solid #f59e0b; 
+      color: #fde68a;
+      animation: glow 1.5s infinite alternate;
+    }
+    .instruction.success { background: rgba(52,211,153,0.15); border: 1px solid #34d399; color: #6ee7b7; }
+    .instruction.complete { background: rgba(139,92,246,0.2); border: 1px solid #a78bfa; color: #ddd6fe; }
     @keyframes glow {
       from { box-shadow: 0 0 8px rgba(245,158,11,0.3); }
       to   { box-shadow: 0 0 20px rgba(245,158,11,0.6); }
     }
-    .instruction.success { background: rgba(52,211,153,0.15); border: 1px solid #34d399; color: #6ee7b7; }
-    .instruction.complete { background: rgba(139,92,246,0.2); border: 1px solid #a78bfa; color: #ddd6fe; }
+
+    /* ── Bag weight ── */
+    #bag-weight-display {
+      display:none;
+      margin: 0 14px 14px;
+      padding: 20px;
+      background: rgba(245,158,11,0.15);
+      border: 2px solid #f59e0b;
+      border-radius: 20px;
+      text-align: center;
+    }
 
     /* ── Inventory ── */
     .section-title {
-      padding: 6px 16px;
+      padding: 4px 16px;
       font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 1px;
@@ -66,9 +151,8 @@
     .inventory {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
+      gap: 10px;
       padding: 6px 14px 14px;
-      flex: 1;
     }
     .item-card {
       display: flex;
@@ -77,66 +161,24 @@
       justify-content: center;
       background: rgba(255,255,255,0.07);
       border: 2px solid rgba(255,255,255,0.1);
-      border-radius: 18px;
-      padding: 16px 8px;
-      gap: 8px;
+      border-radius: 16px;
+      padding: 14px 8px;
+      gap: 6px;
       cursor: pointer;
       transition: all 0.15s;
-      user-select: none;
-      -webkit-user-select: none;
-      min-height: 100px;
+      min-height: 90px;
       position: relative;
-      overflow: hidden;
     }
-    .item-card:active:not(.sent):not(.locked) {
-      transform: scale(0.93);
-      background: rgba(255,255,255,0.14);
-    }
-    .item-card.requested {
-      border-color: #f59e0b;
-      background: rgba(245,158,11,0.15);
-      animation: itemPulse 1s infinite alternate;
-    }
+    .item-card:active:not(.sent):not(.locked) { transform: scale(0.93); }
+    .item-card.requested { border-color: #f59e0b; background: rgba(245,158,11,0.15); animation: itemPulse 1s infinite alternate; }
     @keyframes itemPulse {
       from { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
       to   { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
     }
-    .item-card.sent {
-      opacity: 0.3;
-      cursor: not-allowed;
-      border-color: transparent;
-    }
-    .item-card.sent::after {
-      content: "✓ Sent";
-      position: absolute;
-      bottom: 6px;
-      font-size: 0.7rem;
-      color: #34d399;
-    }
-    .item-card.locked {
-      cursor: not-allowed;
-    }
-    .item-emoji { font-size: 2.4rem; }
-    .item-label { font-size: 0.78rem; font-weight: 600; text-align: center; opacity: 0.9; }
-
-    /* Toast notification */
-    .toast {
-      position: fixed;
-      bottom: 24px; left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: rgba(239,68,68,0.9);
-      color: white;
-      padding: 12px 22px;
-      border-radius: 12px;
-      font-size: 0.88rem;
-      font-weight: 600;
-      transition: transform 0.3s;
-      z-index: 999;
-      text-align: center;
-      max-width: 300px;
-    }
-    .toast.show { transform: translateX(-50%) translateY(0); }
-    .toast.green { background: rgba(52,211,153,0.9); }
+    .item-card.sent { opacity: 0.3; cursor: not-allowed; border-color: transparent; }
+    .item-card.sent::after { content: "✓ Sent"; position: absolute; bottom: 4px; font-size: 0.65rem; color: #34d399; }
+    .item-emoji { font-size: 2.2rem; }
+    .item-label { font-size: 0.75rem; font-weight: 600; text-align: center; }
 
     /* Boarding pass */
     .boarding-pass {
@@ -148,78 +190,112 @@
       display: none;
     }
     .boarding-pass.show { display: block; animation: slideUp 0.5s ease; }
-    @keyframes slideUp {
-      from { transform: translateY(40px); opacity: 0; }
-      to   { transform: translateY(0); opacity: 1; }
-    }
-    .bp-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 14px;
-    }
-    .bp-header h3 { color: #60d0f5; font-size: 1rem; }
-    .bp-row { display: flex; justify-content: space-between; padding: 8px 0;
-              border-bottom: 1px dashed rgba(255,255,255,0.1); font-size: 0.88rem; }
+    @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    .bp-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed rgba(255,255,255,0.1); font-size: 0.88rem; }
     .bp-label { font-size: 0.7rem; color: rgba(255,255,255,0.4); display: block; margin-bottom: 2px; }
-    .barcode { text-align: center; margin-top: 12px; font-size: 2rem; letter-spacing: -2px;
-               opacity: 0.4; font-family: monospace; }
+    .barcode { text-align: center; margin-top: 12px; font-size: 2rem; letter-spacing: -2px; opacity: 0.4; font-family: monospace; }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(239,68,68,0.9);
+      color: white; padding: 12px 22px;
+      border-radius: 12px; font-size: 0.88rem;
+      font-weight: 600; transition: transform 0.3s; z-index: 999;
+      text-align: center; max-width: 300px;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.green { background: rgba(52,211,153,0.9); }
   </style>
 </head>
 <body>
 
 <header>
-  <div>
-    <div class="role-tag">🧳 PASSENGER</div>
-  </div>
+  <div class="role-tag">🧳 PASSENGER</div>
   <h2 id="player-name">Player</h2>
 </header>
 
+<!-- Identity Card -->
+<div class="id-card" id="id-card" style="display:none">
+  <div class="id-card-header">
+    <div class="passport-emoji">🛂</div>
+    <div>
+      <h3>Your Identity Card</h3>
+      <p>Read the highlighted info out loud!</p>
+    </div>
+  </div>
+  <div class="id-fields">
+    <div class="id-field" id="field-firstName">
+      <div class="field-label">First Name</div>
+      <div class="field-value" id="val-firstName">-</div>
+    </div>
+    <div class="id-field" id="field-lastName">
+      <div class="field-label">Last Name</div>
+      <div class="field-value" id="val-lastName">-</div>
+    </div>
+    <div class="id-field" id="field-age">
+      <div class="field-label">Age</div>
+      <div class="field-value" id="val-age">-</div>
+    </div>
+    <div class="id-field" id="field-flightNum">
+      <div class="field-label">Flight Number</div>
+      <div class="field-value" id="val-flightNum">-</div>
+    </div>
+    <div class="id-field full-width" id="field-passportNo">
+      <div class="field-label">Passport Number</div>
+      <div class="field-value" id="val-passportNo">-</div>
+    </div>
+    <div class="id-field full-width" id="field-destination">
+      <div class="field-label">Destination</div>
+      <div class="field-value" id="val-destination">-</div>
+    </div>
+  </div>
+</div>
+
+<!-- Instruction -->
 <div class="instruction waiting" id="instruction">
   ✈️ Get ready! The check-in clerk will speak to you shortly.
 </div>
 
-<!-- Boarding Pass (hidden until issued) -->
+<!-- Bag weight display -->
+<div id="bag-weight-display">
+  <div style="font-size:3rem">🧳</div>
+  <div style="font-size:0.9rem;opacity:0.7;margin-bottom:4px">Your bag weighs:</div>
+  <div id="bag-weight-num" style="font-size:4rem;font-weight:900;color:#f59e0b">-<span style="font-size:2rem">kg</span></div>
+  <div style="font-size:0.85rem;opacity:0.6;margin-top:6px">Read this number to the clerk!</div>
+</div>
+
+<!-- Boarding Pass -->
 <div class="boarding-pass" id="boarding-pass">
-  <div class="bp-header">
-    <h3>🎫 Boarding Pass</h3>
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <h3 style="color:#60d0f5;font-size:1rem">🎫 Boarding Pass</h3>
     <span>✈️</span>
   </div>
   <div id="bp-content"></div>
   <div class="barcode">||| || ||| | || ||| |||| || |||</div>
 </div>
 
-<!-- Bag weight display -->
-<div id="bag-weight-display" style="
-  display:none;
-  margin: 14px;
-  padding: 24px;
-  background: rgba(245,158,11,0.15);
-  border: 2px solid #f59e0b;
-  border-radius: 20px;
-  text-align: center;
-  animation: glow 1.5s infinite alternate;
-"></div>
-
 <p class="section-title">Your Items — Tap when asked</p>
-
 <div class="inventory" id="inventory"></div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io();
-
   let playerData = null;
   let items = {};
   let phase = "waiting";
   let checkin = {};
+  let identity = {};
 
-  // Re-join on reconnect
   const name = sessionStorage.getItem("playerName") || "Player";
   document.getElementById("player-name").textContent = name;
 
-  socket.emit("join_player", { name });
+  const savedRole = sessionStorage.getItem("playerRole");
+  socket.emit("join_player", { name, savedRole });
 
   socket.on("joined", (data) => {
     if (data.role !== "passenger") {
@@ -227,7 +303,9 @@
       return;
     }
     playerData = data;
-    items = data.passengerData.items;
+    items = data.passengerData?.items || {};
+    identity = data.passengerData?.identity || {};
+    showIdentityCard();
     renderInventory();
   });
 
@@ -235,9 +313,12 @@
     checkin = state.checkin || {};
     phase = state.phase || "waiting";
     if (state.passengerData) {
-      items = state.passengerData.items;
+      items = state.passengerData.items || {};
+      identity = state.passengerData.identity || {};
     }
+    showIdentityCard();
     updateInstruction();
+    updateFieldHighlights();
     renderInventory();
   });
 
@@ -246,21 +327,15 @@
     renderInventory();
   });
 
-    socket.on("show_bag_weight", ({ weight }) => {
-    // Show weight prominently on passenger screen
-    const weightDiv = document.getElementById("bag-weight-display");
-    weightDiv.style.display = "block";
-    weightDiv.innerHTML = `
-        <div style="font-size:3rem">🧳</div>
-        <div style="font-size:1rem;opacity:0.7;margin-bottom:4px">Your bag weighs:</div>
-        <div style="font-size:4rem;font-weight:900;color:#f59e0b">${weight}<span style="font-size:2rem">kg</span></div>
-        <div style="font-size:0.85rem;opacity:0.6;margin-top:8px">Read this number to the clerk!</div>
-    `;
-    });
-
-  socket.on("item_rejected", ({ msg }) => {
-    showToast("⚠️ " + msg, "red");
+  socket.on("show_bag_weight", ({ weight }) => {
+    const d = document.getElementById("bag-weight-display");
+    d.style.display = "block";
+    document.getElementById("bag-weight-num").innerHTML = 
+      `${weight}<span style="font-size:2rem">kg</span>`;
+    showToast("🧳 Read your bag weight to the clerk!", "green");
   });
+
+  socket.on("item_rejected", ({ msg }) => showToast("⚠️ " + msg));
 
   socket.on("boarding_pass", (pass) => {
     const bp = document.getElementById("boarding-pass");
@@ -282,15 +357,51 @@
     showToast("🎫 Boarding pass received!", "green");
   });
 
-  socket.on("game_reset", () => {
-    window.location.reload();
-  });
+  socket.on("game_reset", () => window.location.reload());
 
-  // ── Render items ──
+  // ── Show identity card ──
+  function showIdentityCard() {
+    if (!identity.firstName) return;
+    document.getElementById("id-card").style.display = "block";
+    document.getElementById("val-firstName").textContent   = identity.firstName;
+    document.getElementById("val-lastName").textContent    = identity.lastName;
+    document.getElementById("val-age").textContent         = identity.age;
+    document.getElementById("val-flightNum").textContent   = identity.flightNum;
+    document.getElementById("val-passportNo").textContent  = identity.passportNo;
+    document.getElementById("val-destination").textContent = identity.destination;
+  }
+
+  // ── Highlight which field is being asked ──
+  function updateFieldHighlights() {
+    // Reset all
+    ["firstName","lastName","age","flightNum","passportNo","destination"].forEach(f => {
+      const el = document.getElementById("field-" + f);
+      if (el) el.className = "id-field" + (f === "destination" || f === "passportNo" ? " full-width" : "");
+    });
+
+    if (checkin.askingFirstName  && !checkin.firstNameCorrect)  setField("firstName", "asking");
+    if (checkin.firstNameCorrect)                                setField("firstName", "confirmed");
+    if (checkin.askingLastName   && !checkin.lastNameCorrect)   setField("lastName",  "asking");
+    if (checkin.lastNameCorrect)                                 setField("lastName",  "confirmed");
+    if (checkin.askingAge        && !checkin.ageCorrect)        setField("age",       "asking");
+    if (checkin.ageCorrect)                                      setField("age",       "confirmed");
+    if (checkin.askingFlight     && !checkin.flightCorrect)     setField("flightNum", "asking");
+    if (checkin.flightCorrect)                                   setField("flightNum", "confirmed");
+    if (checkin.askingPassportNo && !checkin.passportNoCorrect) setField("passportNo","asking");
+    if (checkin.passportNoCorrect)                               setField("passportNo","confirmed");
+  }
+
+  function setField(name, status) {
+    const el = document.getElementById("field-" + name);
+    if (!el) return;
+    const isFullWidth = name === "destination" || name === "passportNo";
+    el.className = "id-field" + (isFullWidth ? " full-width" : "") + " " + status;
+  }
+
+  // ── Inventory ──
   function renderInventory() {
     const inv = document.getElementById("inventory");
     inv.innerHTML = "";
-
     Object.entries(items).forEach(([key, item]) => {
       const isRequested = shouldHighlight(key);
       const div = document.createElement("div");
@@ -302,9 +413,7 @@
         <div class="item-emoji">${item.emoji}</div>
         <div class="item-label">${item.label}</div>
       `;
-      if (!item.sent) {
-        div.onclick = () => sendItem(key);
-      }
+      if (!item.sent) div.onclick = () => sendItem(key);
       inv.appendChild(div);
     });
   }
@@ -317,7 +426,7 @@
 
   function sendItem(key) {
     if (!shouldHighlight(key)) {
-      showToast("⚠️ The clerk hasn't asked for that yet!", "red");
+      showToast("⚠️ The clerk hasn't asked for that yet!");
       return;
     }
     showToast("📤 Sending " + items[key].label + "...", "green");
@@ -326,30 +435,41 @@
 
   function updateInstruction() {
     const el = document.getElementById("instruction");
+    const ci = checkin;
+
     if (phase === "waiting") {
       el.className = "instruction waiting";
       el.textContent = "✈️ Get ready! The check-in clerk will speak to you shortly.";
     } else if (phase === "complete") {
       el.className = "instruction complete";
       el.textContent = "🎉 Check-in complete! Have a wonderful flight!";
-    } else if (checkin.passportRequested && !checkin.passportReceived) {
+    } else if (ci.askingFirstName && !ci.firstNameCorrect) {
       el.className = "instruction request";
-      el.textContent = '🛂 The clerk is asking for your PASSPORT — tap it to hand it over!';
-    } else if (checkin.passportReceived && !checkin.passportValid) {
-      el.className = "instruction waiting";
-      el.textContent = '⏳ Clerk is checking your passport...';
-    } else if (checkin.bagsRequested && !checkin.bagsConfirmed) {
+      el.textContent = "👤 Say your FIRST NAME out loud! Spell it if needed!";
+    } else if (ci.askingLastName && !ci.lastNameCorrect) {
       el.className = "instruction request";
-      el.textContent = '🧳 The clerk is asking about your LUGGAGE — tap it to put it on the belt!';
-    } else if (checkin.bagsConfirmed && !checkin.seatAssigned) {
-      el.className = "instruction waiting";
-      el.textContent = '💺 Clerk is assigning your seat...';
-    } else if (checkin.seatAssigned && !checkin.boardingPassIssued) {
-      el.className = "instruction success";
-      el.textContent = '🖨️ Your boarding pass is being printed...';
-    } else if (checkin.boardingPassIssued) {
+      el.textContent = "👤 Say your LAST NAME out loud! Spell it if needed!";
+    } else if (ci.askingAge && !ci.ageCorrect) {
+      el.className = "instruction request";
+      el.textContent = "🎂 Say your AGE out loud!";
+    } else if (ci.askingFlight && !ci.flightCorrect) {
+      el.className = "instruction request";
+      el.textContent = "✈️ Say your FLIGHT NUMBER out loud!";
+    } else if (ci.askingPassportNo && !ci.passportNoCorrect) {
+      el.className = "instruction request";
+      el.textContent = "🛂 Read your PASSPORT NUMBER out loud! Spell each character!";
+    } else if (ci.passportRequested && !ci.passportReceived) {
+      el.className = "instruction request";
+      el.textContent = "🛂 Hand over your PASSPORT — tap it below!";
+    } else if (ci.bagsRequested && !ci.bagsConfirmed) {
+      el.className = "instruction request";
+      el.textContent = "🧳 Put your LUGGAGE on the belt — tap it below!";
+    } else if (ci.boardingPassIssued) {
       el.className = "instruction success";
       el.textContent = "🎫 You got your boarding pass! Proceed to security. ✅";
+    } else {
+      el.className = "instruction waiting";
+      el.textContent = "⏳ Waiting for the clerk...";
     }
   }
 
