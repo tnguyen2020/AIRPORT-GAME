@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>✈️ Join Airport Game</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(160deg, #0f2027, #203a43, #2c5364);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      padding: 24px;
+    }
+    .card {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 24px;
+      padding: 36px 28px;
+      width: 100%;
+      max-width: 380px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+    }
+    .logo { font-size: 4rem; margin-bottom: 12px; }
+    h1 { font-size: 1.6rem; margin-bottom: 6px; }
+    p { opacity: 0.6; font-size: 0.9rem; margin-bottom: 28px; }
+    input {
+      width: 100%;
+      padding: 14px 18px;
+      border-radius: 12px;
+      border: 2px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+      color: white;
+      font-size: 1.1rem;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input::placeholder { color: rgba(255,255,255,0.4); }
+    input:focus { border-color: #60d0f5; }
+    button {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      background: #f59e0b;
+      color: #1a1a2e;
+      font-size: 1.1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+    button:active { transform: scale(0.97); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .error-msg {
+      margin-top: 14px;
+      color: #fca5a5;
+      font-size: 0.9rem;
+    }
+    .connecting {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+    .spinner {
+      width: 36px; height: 36px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: #60d0f5;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">✈️</div>
+  <h1>Airport Game</h1>
+  <p>Enter your name to join the game!</p>
+  <input id="name-input" type="text" placeholder="Your name" maxlength="20" autocomplete="off"/>
+  <button id="join-btn" onclick="joinGame()">🚀 Join Game</button>
+  <p id="error-msg" class="error-msg"></p>
+  <div class="connecting" id="connecting">
+    <div class="spinner"></div>
+    <span>Joining game...</span>
+  </div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  socket.on("joined", ({ role }) => {
+    // Redirect to role-specific page
+    window.location.href = `/${role}.html`;
+  });
+
+  socket.on("error_msg", ({ msg }) => {
+    document.getElementById("error-msg").textContent = "❌ " + msg;
+    document.getElementById("join-btn").disabled = false;
+    document.getElementById("connecting").style.display = "none";
+  });
+
+  function joinGame() {
+    const name = document.getElementById("name-input").value.trim();
+    if (!name) {
+      document.getElementById("error-msg").textContent = "Please enter your name!";
+      return;
+    }
+    document.getElementById("join-btn").disabled = true;
+    document.getElementById("connecting").style.display = "flex";
+    document.getElementById("error-msg").textContent = "";
+
+    // Store name for the role page
+    sessionStorage.setItem("playerName", name);
+    sessionStorage.setItem("socketId", socket.id);
+
+    socket.emit("join_player", { name });
+  }
+
+  document.getElementById("name-input").addEventListener("keyup", (e) => {
+    if (e.key === "Enter") joinGame();
+  });
+</script>
+</body>
+</html>

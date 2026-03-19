@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>✈️ Passenger</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(160deg, #1a1a2e, #16213e, #0f3460);
+      min-height: 100vh;
+      color: white;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── Header ── */
+    header {
+      background: rgba(255,255,255,0.07);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    header .role-tag {
+      background: #3b82f6;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 12px;
+      letter-spacing: 0.5px;
+    }
+    header h2 { font-size: 1rem; }
+
+    /* ── Instruction banner ── */
+    .instruction {
+      margin: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      text-align: center;
+      font-weight: 500;
+      transition: all 0.4s;
+    }
+    .instruction.waiting { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7); }
+    .instruction.request { background: rgba(245,158,11,0.2); border: 1px solid #f59e0b; color: #fde68a;
+                            animation: glow 1.5s infinite alternate; }
+    @keyframes glow {
+      from { box-shadow: 0 0 8px rgba(245,158,11,0.3); }
+      to   { box-shadow: 0 0 20px rgba(245,158,11,0.6); }
+    }
+    .instruction.success { background: rgba(52,211,153,0.15); border: 1px solid #34d399; color: #6ee7b7; }
+    .instruction.complete { background: rgba(139,92,246,0.2); border: 1px solid #a78bfa; color: #ddd6fe; }
+
+    /* ── Inventory ── */
+    .section-title {
+      padding: 6px 16px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.4;
+    }
+    .inventory {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      padding: 6px 14px 14px;
+      flex: 1;
+    }
+    .item-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.07);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 18px;
+      padding: 16px 8px;
+      gap: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+      user-select: none;
+      -webkit-user-select: none;
+      min-height: 100px;
+      position: relative;
+      overflow: hidden;
+    }
+    .item-card:active:not(.sent):not(.locked) {
+      transform: scale(0.93);
+      background: rgba(255,255,255,0.14);
+    }
+    .item-card.requested {
+      border-color: #f59e0b;
+      background: rgba(245,158,11,0.15);
+      animation: itemPulse 1s infinite alternate;
+    }
+    @keyframes itemPulse {
+      from { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+      to   { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+    }
+    .item-card.sent {
+      opacity: 0.3;
+      cursor: not-allowed;
+      border-color: transparent;
+    }
+    .item-card.sent::after {
+      content: "✓ Sent";
+      position: absolute;
+      bottom: 6px;
+      font-size: 0.7rem;
+      color: #34d399;
+    }
+    .item-card.locked {
+      cursor: not-allowed;
+    }
+    .item-emoji { font-size: 2.4rem; }
+    .item-label { font-size: 0.78rem; font-weight: 600; text-align: center; opacity: 0.9; }
+
+    /* Toast notification */
+    .toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(239,68,68,0.9);
+      color: white;
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: transform 0.3s;
+      z-index: 999;
+      text-align: center;
+      max-width: 300px;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.green { background: rgba(52,211,153,0.9); }
+
+    /* Boarding pass */
+    .boarding-pass {
+      margin: 14px;
+      background: linear-gradient(135deg, #1e3a5f, #0a2342);
+      border: 2px solid #60d0f5;
+      border-radius: 20px;
+      padding: 20px;
+      display: none;
+    }
+    .boarding-pass.show { display: block; animation: slideUp 0.5s ease; }
+    @keyframes slideUp {
+      from { transform: translateY(40px); opacity: 0; }
+      to   { transform: translateY(0); opacity: 1; }
+    }
+    .bp-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 14px;
+    }
+    .bp-header h3 { color: #60d0f5; font-size: 1rem; }
+    .bp-row { display: flex; justify-content: space-between; padding: 8px 0;
+              border-bottom: 1px dashed rgba(255,255,255,0.1); font-size: 0.88rem; }
+    .bp-label { font-size: 0.7rem; color: rgba(255,255,255,0.4); display: block; margin-bottom: 2px; }
+    .barcode { text-align: center; margin-top: 12px; font-size: 2rem; letter-spacing: -2px;
+               opacity: 0.4; font-family: monospace; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <div class="role-tag">🧳 PASSENGER</div>
+  </div>
+  <h2 id="player-name">Player</h2>
+</header>
+
+<div class="instruction waiting" id="instruction">
+  ✈️ Get ready! The check-in clerk will speak to you shortly.
+</div>
+
+<!-- Boarding Pass (hidden until issued) -->
+<div class="boarding-pass" id="boarding-pass">
+  <div class="bp-header">
+    <h3>🎫 Boarding Pass</h3>
+    <span>✈️</span>
+  </div>
+  <div id="bp-content"></div>
+  <div class="barcode">||| || ||| | || ||| |||| || |||</div>
+</div>
+
+<!-- Bag weight display -->
+<div id="bag-weight-display" style="
+  display:none;
+  margin: 14px;
+  padding: 24px;
+  background: rgba(245,158,11,0.15);
+  border: 2px solid #f59e0b;
+  border-radius: 20px;
+  text-align: center;
+  animation: glow 1.5s infinite alternate;
+"></div>
+
+<p class="section-title">Your Items — Tap when asked</p>
+
+<div class="inventory" id="inventory"></div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+
+  let playerData = null;
+  let items = {};
+  let phase = "waiting";
+  let checkin = {};
+
+  // Re-join on reconnect
+  const name = sessionStorage.getItem("playerName") || "Player";
+  document.getElementById("player-name").textContent = name;
+
+  socket.emit("join_player", { name });
+
+  socket.on("joined", (data) => {
+    if (data.role !== "passenger") {
+      window.location.href = "/clerk.html";
+      return;
+    }
+    playerData = data;
+    items = data.passengerData.items;
+    renderInventory();
+  });
+
+  socket.on("state_update", (state) => {
+    checkin = state.checkin || {};
+    phase = state.phase || "waiting";
+    if (state.passengerData) {
+      items = state.passengerData.items;
+    }
+    updateInstruction();
+    renderInventory();
+  });
+
+  socket.on("inventory_update", (data) => {
+    items = data.items;
+    renderInventory();
+  });
+
+    socket.on("show_bag_weight", ({ weight }) => {
+    // Show weight prominently on passenger screen
+    const weightDiv = document.getElementById("bag-weight-display");
+    weightDiv.style.display = "block";
+    weightDiv.innerHTML = `
+        <div style="font-size:3rem">🧳</div>
+        <div style="font-size:1rem;opacity:0.7;margin-bottom:4px">Your bag weighs:</div>
+        <div style="font-size:4rem;font-weight:900;color:#f59e0b">${weight}<span style="font-size:2rem">kg</span></div>
+        <div style="font-size:0.85rem;opacity:0.6;margin-top:8px">Read this number to the clerk!</div>
+    `;
+    });
+
+  socket.on("item_rejected", ({ msg }) => {
+    showToast("⚠️ " + msg, "red");
+  });
+
+  socket.on("boarding_pass", (pass) => {
+    const bp = document.getElementById("boarding-pass");
+    bp.classList.add("show");
+    document.getElementById("bp-content").innerHTML = `
+      <div class="bp-row">
+        <div><span class="bp-label">Passenger</span>${pass.name}</div>
+        <div><span class="bp-label">Flight</span>${pass.flight}</div>
+      </div>
+      <div class="bp-row">
+        <div><span class="bp-label">To</span>${pass.destination}</div>
+      </div>
+      <div class="bp-row">
+        <div><span class="bp-label">Gate</span>${pass.gate}</div>
+        <div><span class="bp-label">Seat</span>${pass.seat}</div>
+        <div><span class="bp-label">Departs</span>${pass.time}</div>
+      </div>
+    `;
+    showToast("🎫 Boarding pass received!", "green");
+  });
+
+  socket.on("game_reset", () => {
+    window.location.reload();
+  });
+
+  // ── Render items ──
+  function renderInventory() {
+    const inv = document.getElementById("inventory");
+    inv.innerHTML = "";
+
+    Object.entries(items).forEach(([key, item]) => {
+      const isRequested = shouldHighlight(key);
+      const div = document.createElement("div");
+      div.className = "item-card" +
+        (item.sent ? " sent" : "") +
+        (isRequested && !item.sent ? " requested" : "") +
+        (!isRequested && !item.sent ? " locked" : "");
+      div.innerHTML = `
+        <div class="item-emoji">${item.emoji}</div>
+        <div class="item-label">${item.label}</div>
+      `;
+      if (!item.sent) {
+        div.onclick = () => sendItem(key);
+      }
+      inv.appendChild(div);
+    });
+  }
+
+  function shouldHighlight(key) {
+    if (key === "passport" && checkin.passportRequested && !checkin.passportReceived) return true;
+    if (key === "luggage"  && checkin.bagsRequested    && !checkin.bagsConfirmed)    return true;
+    return false;
+  }
+
+  function sendItem(key) {
+    if (!shouldHighlight(key)) {
+      showToast("⚠️ The clerk hasn't asked for that yet!", "red");
+      return;
+    }
+    showToast("📤 Sending " + items[key].label + "...", "green");
+    socket.emit("passenger_action", { action: "send_item", data: { itemKey: key } });
+  }
+
+  function updateInstruction() {
+    const el = document.getElementById("instruction");
+    if (phase === "waiting") {
+      el.className = "instruction waiting";
+      el.textContent = "✈️ Get ready! The check-in clerk will speak to you shortly.";
+    } else if (phase === "complete") {
+      el.className = "instruction complete";
+      el.textContent = "🎉 Check-in complete! Have a wonderful flight!";
+    } else if (checkin.passportRequested && !checkin.passportReceived) {
+      el.className = "instruction request";
+      el.textContent = '🛂 The clerk is asking for your PASSPORT — tap it to hand it over!';
+    } else if (checkin.passportReceived && !checkin.passportValid) {
+      el.className = "instruction waiting";
+      el.textContent = '⏳ Clerk is checking your passport...';
+    } else if (checkin.bagsRequested && !checkin.bagsConfirmed) {
+      el.className = "instruction request";
+      el.textContent = '🧳 The clerk is asking about your LUGGAGE — tap it to put it on the belt!';
+    } else if (checkin.bagsConfirmed && !checkin.seatAssigned) {
+      el.className = "instruction waiting";
+      el.textContent = '💺 Clerk is assigning your seat...';
+    } else if (checkin.seatAssigned && !checkin.boardingPassIssued) {
+      el.className = "instruction success";
+      el.textContent = '🖨️ Your boarding pass is being printed...';
+    } else if (checkin.boardingPassIssued) {
+      el.className = "instruction success";
+      el.textContent = "🎫 You got your boarding pass! Proceed to security. ✅";
+    }
+  }
+
+  function showToast(msg, type = "red") {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.className = "toast show" + (type === "green" ? " green" : "");
+    setTimeout(() => { toast.className = "toast" + (type === "green" ? " green" : ""); }, 2500);
+  }
+</script>
+</body>
+</html>

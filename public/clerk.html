@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+  <title>✈️ Check-in Clerk</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(160deg, #1a1a2e, #16213e, #0f3460);
+      min-height: 100vh;
+      color: white;
+      display: flex;
+      flex-direction: column;
+    }
+    header {
+      background: rgba(255,255,255,0.07);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .role-tag {
+      background: #f59e0b;
+      color: #1a1a2e;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+    .instruction {
+      margin: 14px;
+      padding: 14px 16px;
+      border-radius: 14px;
+      font-size: 0.9rem;
+      line-height: 1.5;
+      text-align: center;
+      font-weight: 500;
+      transition: all 0.4s;
+    }
+    .instruction.waiting { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.7); }
+    .instruction.action  { background: rgba(245,158,11,0.2); border: 1px solid #f59e0b; color: #fde68a; }
+    .instruction.success { background: rgba(52,211,153,0.15); border: 1px solid #34d399; color: #6ee7b7; }
+
+    .section-title {
+      padding: 6px 16px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.4;
+    }
+
+    /* Action Buttons */
+    .actions {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 6px 14px 14px;
+    }
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(255,255,255,0.07);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 18px;
+      padding: 16px 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: left;
+      width: 100%;
+    }
+    .action-btn:active:not(:disabled) {
+      transform: scale(0.96);
+    }
+    .action-btn.available {
+      border-color: #f59e0b;
+      background: rgba(245,158,11,0.15);
+      animation: btnPulse 1.5s infinite alternate;
+    }
+    @keyframes btnPulse {
+      from { box-shadow: 0 0 0 0 rgba(245,158,11,0.4); }
+      to   { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+    }
+    .action-btn.done {
+      opacity: 0.35;
+      cursor: not-allowed;
+      border-color: transparent;
+    }
+    .action-btn:disabled { cursor: not-allowed; }
+    .btn-emoji { font-size: 2rem; }
+    .btn-text { flex: 1; }
+    .btn-label { font-size: 0.75rem; opacity: 0.5; font-weight: 400; margin-top: 2px; }
+
+    /* Seat selector */
+    .seat-options {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      padding: 0 14px 14px;
+    }
+    .seat-options.show { display: flex; }
+    .seat-btn {
+      padding: 14px;
+      border-radius: 14px;
+      border: 2px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.07);
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .seat-btn:active { transform: scale(0.96); background: rgba(255,255,255,0.15); }
+
+    /* Received item popup */
+    .item-popup {
+      position: fixed;
+      top: 20px; left: 50%;
+      transform: translateX(-50%) translateY(-100px);
+      background: rgba(52,211,153,0.95);
+      color: #1a1a2e;
+      padding: 14px 24px;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      transition: transform 0.4s;
+      z-index: 999;
+      text-align: center;
+    }
+    .item-popup.show { transform: translateX(-50%) translateY(0); }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px; left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: rgba(239,68,68,0.9);
+      color: white;
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      transition: transform 0.3s;
+      z-index: 999;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.green { background: rgba(52,211,153,0.9); }
+
+    /* Waiting screen */
+    .waiting-screen {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      opacity: 0.6;
+    }
+    .waiting-screen .big { font-size: 4rem; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="role-tag">🧑‍💼 CHECK-IN CLERK</div>
+  <h2 id="player-name">Clerk</h2>
+</header>
+
+<div class="instruction waiting" id="instruction">
+  ✈️ Waiting for passenger to arrive...
+</div>
+
+<!-- Waiting for passenger -->
+<div class="waiting-screen" id="waiting-screen">
+  <div class="big">⏳</div>
+  <p>Waiting for passenger to join...</p>
+</div>
+
+<!-- Main actions (hidden until game starts) -->
+<div id="main-actions" style="display:none; flex-direction:column; flex:1;">
+
+  <p class="section-title">Your Actions</p>
+
+  <div class="actions">
+
+    <!-- Step 1: Greet & ask for passport -->
+    <button class="action-btn available" id="btn-passport" onclick="clerkAction('request_passport')">
+      <span class="btn-emoji">🛂</span>
+      <div class="btn-text">
+        Ask for Passport
+        <div class="btn-label">"May I see your passport please?"</div>
+      </div>
+    </button>
+
+    <!-- Step 2: Passport result -->
+    <button class="action-btn" id="btn-passport-ok" onclick="clerkAction('passport_check_ok')" disabled>
+      <span class="btn-emoji">✅</span>
+      <div class="btn-text">
+        Passport is Valid
+        <div class="btn-label">"Thank you, everything looks good!"</div>
+      </div>
+    </button>
+
+    <!-- Step 3: Ask about bags -->
+    <button class="action-btn" id="btn-bags" onclick="clerkAction('request_bags')" disabled>
+      <span class="btn-emoji">🧳</span>
+      <div class="btn-text">
+        Ask About Luggage
+        <div class="btn-label">"How many bags are you checking in?"</div>
+      </div>
+    </button>
+
+    <!-- Step 3b: Enter bag weight -->
+<div id="weight-input-section" style="display:none;">
+  <div style="
+    background: rgba(245,158,11,0.15);
+    border: 2px solid #f59e0b;
+    border-radius: 18px;
+    padding: 20px;
+    margin: 0 14px;
+  ">
+    <p style="font-size:0.85rem;opacity:0.7;margin-bottom:10px;text-align:center">
+      🧳 Passenger put bag on belt!<br>
+      <strong>Ask them: "How heavy is your bag?"</strong><br>
+      Then type the weight they say:
+    </p>
+    <div style="display:flex;gap:10px;align-items:center">
+      <input 
+        id="weight-input"
+        type="number" 
+        min="1" 
+        max="50"
+        placeholder="e.g. 18"
+        style="
+          flex:1;
+          padding: 14px;
+          border-radius: 12px;
+          border: 2px solid rgba(255,255,255,0.2);
+          background: rgba(255,255,255,0.1);
+          color: white;
+          font-size: 1.5rem;
+          font-weight: 700;
+          text-align: center;
+          outline: none;
+        "
+      />
+      <span style="font-size:1.2rem;opacity:0.7">kg</span>
+    </div>
+    <button onclick="submitWeight()" style="
+      width:100%;
+      margin-top:12px;
+      padding:14px;
+      border-radius:12px;
+      border:none;
+      background:#f59e0b;
+      color:#1a1a2e;
+      font-size:1rem;
+      font-weight:700;
+      cursor:pointer;
+    ">✅ Confirm Weight</button>
+  </div>
+</div>
+
+    <!-- Step 4: Assign seat -->
+    <button class="action-btn" id="btn-seat" onclick="showSeatOptions()" disabled>
+      <span class="btn-emoji">💺</span>
+      <div class="btn-text">
+        Assign Seat
+        <div class="btn-label">"What type of seat would you prefer?"</div>
+      </div>
+    </button>
+
+  </div>
+
+  <!-- Seat options -->
+  <div class="seat-options" id="seat-options">
+    <p class="section-title">Choose seat type:</p>
+    <button class="seat-btn" onclick="assignSeat('window')">🪟 Window Seat</button>
+    <button class="seat-btn" onclick="assignSeat('aisle')">🚶 Aisle Seat</button>
+    <button class="seat-btn" onclick="assignSeat('middle')">💺 Middle Seat</button>
+  </div>
+
+</div>
+
+<!-- Item received popup -->
+<div class="item-popup" id="item-popup">
+  📥 Item received!
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  const socket = io();
+  const name = sessionStorage.getItem("playerName") || "Clerk";
+  document.getElementById("player-name").textContent = name;
+
+  let checkin = {};
+  let phase = "waiting";
+
+  socket.emit("join_player", { name });
+
+  socket.on("joined", (data) => {
+    if (data.role !== "clerk") {
+      window.location.href = "/passenger.html";
+      return;
+    }
+  });
+
+  socket.on("state_update", (state) => {
+    checkin = state.checkin || {};
+    phase = state.phase || "waiting";
+    updateUI();
+  });
+
+  socket.on("item_received", ({ itemKey, item }) => {
+    showPopup(`📥 Received: ${item.emoji} ${item.label}${item.weight ? " (" + item.weight + "kg)" : ""}`);
+    updateButtons();
+  });
+
+  socket.on("game_reset", () => {
+    window.location.reload();
+  });
+
+  function clerkAction(action, data = {}) {
+    socket.emit("clerk_action", { action, data });
+  }
+
+  function submitWeight() {
+  const input = document.getElementById("weight-input");
+  const weight = parseInt(input.value);
+  if (!weight || weight < 1 || weight > 50) {
+    showToast("Please enter a valid weight!", "red");
+    return;
+  }
+  socket.emit("clerk_action", { 
+    action: "confirm_bag_weight", 
+    data: { weight } 
+  });
+}
+
+socket.on("enter_bag_weight", () => {
+  document.getElementById("weight-input-section").style.display = "block";
+  showToast("🧳 Bag is on belt! Ask passenger for the weight!", "green");
+});
+
+socket.on("weight_result", ({ correct, weight, correct_weight, entered }) => {
+  if (correct) {
+    document.getElementById("weight-input-section").style.display = "none";
+    showToast(`✅ Correct! ${weight}kg confirmed!`, "green");
+  } else {
+    showToast(`❌ Wrong! Passenger said ${correct_weight}kg, you typed ${entered}kg. Try again!`, "red");
+    document.getElementById("weight-input").value = "";
+  }
+});
+
+  function showSeatOptions() {
+    document.getElementById("seat-options").classList.add("show");
+    showToast("Choose a seat type for the passenger!", "green");
+  }
+
+  function assignSeat(seatType) {
+    clerkAction("assign_seat", { seatType });
+    document.getElementById("seat-options").classList.remove("show");
+  }
+
+  function updateUI() {
+    // Show/hide waiting screen
+    if (phase === "waiting") {
+      document.getElementById("waiting-screen").style.display = "flex";
+      document.getElementById("main-actions").style.display = "none";
+    } else {
+      document.getElementById("waiting-screen").style.display = "none";
+      document.getElementById("main-actions").style.display = "flex";
+    }
+
+    updateButtons();
+    updateInstruction();
+  }
+
+  function updateButtons() {
+    const ci = checkin;
+
+    // Passport button
+    const btnPassport = document.getElementById("btn-passport");
+    if (ci.passportRequested) {
+      btnPassport.className = "action-btn done";
+      btnPassport.disabled = true;
+    }
+
+    // Passport OK button
+    const btnOk = document.getElementById("btn-passport-ok");
+    if (ci.passportReceived && !ci.passportValid) {
+      btnOk.className = "action-btn available";
+      btnOk.disabled = false;
+    } else if (ci.passportValid) {
+      btnOk.className = "action-btn done";
+      btnOk.disabled = true;
+    }
+
+    // Bags button
+    const btnBags = document.getElementById("btn-bags");
+    if (ci.passportValid && !ci.bagsRequested) {
+      btnBags.className = "action-btn available";
+      btnBags.disabled = false;
+    } else if (ci.bagsRequested) {
+      btnBags.className = "action-btn done";
+      btnBags.disabled = true;
+    }
+
+    // Seat button
+    const btnSeat = document.getElementById("btn-seat");
+    if (ci.bagsConfirmed && !ci.seatAssigned) {
+      btnSeat.className = "action-btn available";
+      btnSeat.disabled = false;
+    } else if (ci.seatAssigned) {
+      btnSeat.className = "action-btn done";
+      btnSeat.disabled = true;
+    }
+  }
+
+  function updateInstruction() {
+    const el = document.getElementById("instruction");
+    const ci = checkin;
+
+    if (phase === "waiting") {
+      el.className = "instruction waiting";
+      el.textContent = "⏳ Waiting for passenger to join...";
+    } else if (!ci.passportRequested) {
+      el.className = "instruction action";
+      el.textContent = "👋 Greet the passenger and ask for their passport!";
+    } else if (!ci.passportReceived) {
+      el.className = "instruction waiting";
+      el.textContent = "⏳ Waiting for passenger to hand over passport...";
+    } else if (!ci.passportValid) {
+      el.className = "instruction action";
+      el.textContent = "🛂 Check the passport and confirm it's valid!";
+    } else if (!ci.bagsRequested) {
+      el.className = "instruction action";
+      el.textContent = "🧳 Ask the passenger about their luggage!";
+    } else if (!ci.bagsConfirmed) {
+      el.className = "instruction waiting";
+      el.textContent = "⏳ Waiting for passenger to put bags on belt...";
+    } else if (!ci.seatAssigned) {
+      el.className = "instruction action";
+      el.textContent = "💺 Assign a seat to the passenger!";
+    } else {
+      el.className = "instruction success";
+      el.textContent = "🎉 Check-in complete! Well done!";
+    }
+  }
+
+  function showPopup(msg) {
+    const popup = document.getElementById("item-popup");
+    popup.textContent = msg;
+    popup.classList.add("show");
+    setTimeout(() => popup.classList.remove("show"), 3000);
+  }
+
+  function showToast(msg, type = "red") {
+    const toast = document.getElementById("toast");
+    toast.textContent = msg;
+    toast.className = "toast show" + (type === "green" ? " green" : "");
+    setTimeout(() => { toast.className = "toast" + (type === "green" ? " green" : ""); }, 2500);
+  }
+</script>
+</body>
+</html>
