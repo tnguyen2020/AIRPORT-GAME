@@ -44,6 +44,20 @@ function resetCheckin() {
     seatAssigned: false,
     seatType: "",
     boardingPassIssued: false,
+        bagsOnBelt: false,
+    clerkEnteredWeight: 0,
+    askingFirstName: false,
+    firstNameCorrect: false,
+    firstNameEntered: "",
+    askingLastName: false,
+    lastNameCorrect: false,
+    lastNameEntered: "",
+    askingAge: false,
+    ageCorrect: false,
+    askingFlight: false,
+    flightCorrect: false,
+    askingPassportNo: false,
+    passportNoCorrect: false,
   };
   gameState.log = [];
   gameState.phase = "waiting";
@@ -107,51 +121,84 @@ io.on("connection", (socket) => {
   });
 
   // ── Join as player (phone) ──
-  socket.on("join_player", ({ name }) => {
-    const takenRoles = Object.values(gameState.roles);
-    let assignedRole = "";
+socket.on("join_player", ({ name, savedRole }) => {
+  const takenRoles = Object.values(gameState.roles);
+  let assignedRole = "";
 
-    if (!takenRoles.includes("passenger")) {
-      assignedRole = "passenger";
-      gameState.passengers[socket.id] = {
-        name: name || "Alex",
-        items: {
-          passport: { label: "Passport", emoji: "🛂", owned: true, sent: false },
-          luggage:  { label: "Luggage",  emoji: "🧳", owned: true, sent: false },
-          phone:    { label: "Phone",    emoji: "📱", owned: true, sent: false },
-          water:    { label: "Water",    emoji: "💧", owned: true, sent: false },
-          keys:     { label: "Keys",     emoji: "🔑", owned: true, sent: false },
-          coins:    { label: "Coins",    emoji: "🪙", owned: true, sent: false },
-        },
-        boardingPass: null,
-      };
-    } else if (!takenRoles.includes("clerk")) {
-      assignedRole = "clerk";
-      gameState.clerk = socket.id;
-    } else {
-      socket.emit("error_msg", { msg: "Room is full for this scenario!" });
-      return;
-    }
-
-    gameState.roles[socket.id] = assignedRole;
-    console.log(`[${assignedRole.toUpperCase()}] ${socket.id} (${name})`);
-
+  if (gameState.roles[socket.id]) {
+    assignedRole = gameState.roles[socket.id];
     socket.emit("joined", {
       role: assignedRole,
       name: name,
-      passengerData: assignedRole === "passenger" ? gameState.passengers[socket.id] : null,
+      passengerData: assignedRole === "passenger" ?
+        gameState.passengers[socket.id] : null,
     });
+    return;
+  }
 
-    addLog(`✅ ${name} joined as ${assignedRole}`, "success");
+  if (!takenRoles.includes("passenger")) {
+    assignedRole = "passenger";
 
-    // Auto-start when both roles filled
-    const roles = Object.values(gameState.roles).filter((r) => r !== "host");
-    if (roles.includes("passenger") && roles.includes("clerk")) {
-      gameState.phase = "checkin";
-      addLog("🎬 Check-in scenario started!", "success");
-      broadcastAll();
-    }
+    // ── Random passenger identity ──
+    const firstNames = ["Sarah", "James", "Emily", "Michael", "Olivia", "David", "Sophia", "Daniel", "Emma", "Lucas"];
+    const lastNames  = ["Johnson", "Williams", "Brown", "Taylor", "Anderson", "Wilson", "Martinez", "Thompson", "Garcia", "Davis"];
+    const destinations = ["London Heathrow", "Tokyo Haneda", "New York JFK", "Sydney Airport", "Paris Charles de Gaulle", "Singapore Changi", "Dubai International"];
+
+    const firstName   = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastName    = lastNames[Math.floor(Math.random() * lastNames.length)];
+    const age         = Math.floor(18 + Math.random() * 50);
+    const flightNum   = "AB" + Math.floor(100 + Math.random() * 900);
+    const passportNo  = (Math.random().toString(36).substring(2,4) + Math.floor(100000 + Math.random() * 900000)).toUpperCase();
+    const destination = destinations[Math.floor(Math.random() * destinations.length)];
+    const seat        = (Math.floor(1 + Math.random() * 30)) + ["A","B","C","D","E","F"][Math.floor(Math.random()*6)];
+
+    gameState.passengers[socket.id] = {
+      name: name || "Alex",
+      identity: {
+        firstName,
+        lastName,
+        fullName:    `${firstName} ${lastName}`,
+        age:         age.toString(),
+        flightNum,
+        passportNo,
+        destination,
+        seat,
+      },
+      items: {
+        passport: { label: "Passport", emoji: "🛂", owned: true, sent: false },
+        luggage:  { label: "Luggage",  emoji: "🧳", owned: true, sent: false },
+        phone:    { label: "Phone",    emoji: "📱", owned: true, sent: false },
+        water:    { label: "Water",    emoji: "💧", owned: true, sent: false },
+        keys:     { label: "Keys",     emoji: "🔑", owned: true, sent: false },
+        coins:    { label: "Coins",    emoji: "🪙", owned: true, sent: false },
+      },
+      boardingPass: null,
+    };
+  } else if (!takenRoles.includes("clerk")) {
+    assignedRole = "clerk";
+    gameState.clerk = socket.id;
+  } else {
+    socket.emit("error_msg", { msg: "Room is full!" });
+    return;
+  }
+
+  gameState.roles[socket.id] = assignedRole;
+  socket.emit("joined", {
+    role: assignedRole,
+    name: name,
+    passengerData: assignedRole === "passenger" ?
+      gameState.passengers[socket.id] : null,
   });
+
+  addLog(`✅ ${name} joined as ${assignedRole}`, "success");
+
+  const roles = Object.values(gameState.roles).filter((r) => r !== "host");
+  if (roles.includes("passenger") && roles.includes("clerk")) {
+    gameState.phase = "checkin";
+    addLog("🎬 Check-in scenario started!", "success");
+    broadcastAll();
+  }
+});
 
   // ── Clerk actions ──
   socket.on("clerk_action", ({ action, data }) => {
@@ -159,6 +206,134 @@ io.on("connection", (socket) => {
     const ci = gameState.checkin;
 
     switch (action) {
+        case "ask_firstname":
+  ci.askingFirstName = true;
+  addLog("🧑‍💼 Clerk: What is your first name?", "action");
+  broadcastToPassengers();
+  broadcastToClerk();
+  break;
+
+case "check_firstname":
+  const passengerFirst = Object.values(gameState.passengers)[0];
+  const correctFirst = passengerFirst?.identity?.firstName || "";
+  if (data.answer.trim().toLowerCase() === correctFirst.toLowerCase()) {
+    ci.firstNameCorrect = true;
+    ci.firstNameEntered = data.answer;
+    addLog(`✅ First name correct: ${data.answer}`, "success");
+    io.to(socket.id).emit("spelling_result", { 
+      field: "firstName", correct: true, answer: data.answer 
+    });
+  } else {
+    addLog(`❌ Wrong first name: ${data.answer} (correct: ${correctFirst})`, "warning");
+    io.to(socket.id).emit("spelling_result", { 
+      field: "firstName", correct: false, 
+      answer: data.answer, hint: `Starts with "${correctFirst[0]}"` 
+    });
+  }
+  broadcastAll();
+  break;
+
+case "ask_lastname":
+  ci.askingLastName = true;
+  addLog("🧑‍💼 Clerk: What is your last name?", "action");
+  broadcastToPassengers();
+  broadcastToClerk();
+  break;
+
+case "check_lastname":
+  const passengerLast = Object.values(gameState.passengers)[0];
+  const correctLast = passengerLast?.identity?.lastName || "";
+  if (data.answer.trim().toLowerCase() === correctLast.toLowerCase()) {
+    ci.lastNameCorrect = true;
+    ci.lastNameEntered = data.answer;
+    addLog(`✅ Last name correct: ${data.answer}`, "success");
+    io.to(socket.id).emit("spelling_result", { 
+      field: "lastName", correct: true, answer: data.answer 
+    });
+  } else {
+    addLog(`❌ Wrong last name: ${data.answer}`, "warning");
+    io.to(socket.id).emit("spelling_result", { 
+      field: "lastName", correct: false, 
+      answer: data.answer, hint: `Starts with "${correctLast[0]}"` 
+    });
+  }
+  broadcastAll();
+  break;
+
+case "ask_age":
+  ci.askingAge = true;
+  addLog("🧑‍💼 Clerk: How old are you?", "action");
+  broadcastToPassengers();
+  broadcastToClerk();
+  break;
+
+case "check_age":
+  const passengerAge = Object.values(gameState.passengers)[0];
+  const correctAge = passengerAge?.identity?.age || "";
+  if (data.answer.trim() === correctAge) {
+    ci.ageCorrect = true;
+    addLog(`✅ Age correct: ${data.answer}`, "success");
+    io.to(socket.id).emit("spelling_result", { 
+      field: "age", correct: true, answer: data.answer 
+    });
+  } else {
+    addLog(`❌ Wrong age: ${data.answer}`, "warning");
+    io.to(socket.id).emit("spelling_result", { 
+      field: "age", correct: false, answer: data.answer 
+    });
+  }
+  broadcastAll();
+  break;
+
+case "ask_flightnum":
+  ci.askingFlight = true;
+  addLog("🧑‍💼 Clerk: What is your flight number?", "action");
+  broadcastToPassengers();
+  broadcastToClerk();
+  break;
+
+case "check_flightnum":
+  const passengerFlight = Object.values(gameState.passengers)[0];
+  const correctFlight = passengerFlight?.identity?.flightNum || "";
+  if (data.answer.trim().toUpperCase() === correctFlight.toUpperCase()) {
+    ci.flightCorrect = true;
+    addLog(`✅ Flight number correct: ${data.answer}`, "success");
+    io.to(socket.id).emit("spelling_result", { 
+      field: "flightNum", correct: true, answer: data.answer 
+    });
+  } else {
+    addLog(`❌ Wrong flight number: ${data.answer}`, "warning");
+    io.to(socket.id).emit("spelling_result", { 
+      field: "flightNum", correct: false, answer: data.answer 
+    });
+  }
+  broadcastAll();
+  break;
+
+case "ask_passport":
+  ci.askingPassportNo = true;
+  addLog("🧑‍💼 Clerk: What is your passport number?", "action");
+  broadcastToPassengers();
+  broadcastToClerk();
+  break;
+
+case "check_passport":
+  const passengerPass = Object.values(gameState.passengers)[0];
+  const correctPass = passengerPass?.identity?.passportNo || "";
+  if (data.answer.trim().toUpperCase() === correctPass.toUpperCase()) {
+    ci.passportNoCorrect = true;
+    addLog(`✅ Passport number correct: ${data.answer}`, "success");
+    io.to(socket.id).emit("spelling_result", { 
+      field: "passportNo", correct: true, answer: data.answer 
+    });
+  } else {
+    addLog(`❌ Wrong passport number: ${data.answer}`, "warning");
+    io.to(socket.id).emit("spelling_result", { 
+      field: "passportNo", correct: false, answer: data.answer 
+    });
+  }
+  broadcastAll();
+  break;
       case "confirm_bag_weight":
         ci.bagsConfirmed = true;
         ci.bagCount = 1;
