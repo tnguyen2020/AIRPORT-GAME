@@ -15,21 +15,51 @@ app.get("/", (req, res) => {
 // ── Game State ──────────────────────────────────────────────
 const gameState = {
   phase: "waiting",
-  scenario: "checkin", // "checkin" | "security"
+  scenario: "checkin",
   roles: {},
   passengers: {},
   clerk: null,
-  security: null,
+  securityOfficer: null,
   host: null,
-  checkin: { ...existing checkin state... },
-  security: {
-    phase: "waiting",
+  checkin: {
+    passportRequested: false,
+    passportReceived: false,
+    passportValid: false,
+    bagsRequested: false,
+    bagsOnBelt: false,
+    bagsConfirmed: false,
+    bagCount: 0,
+    bagWeight: 0,
+    seatAssigned: false,
+    seatType: "",
+    boardingPassIssued: false,
+    overweightBag: false,
+    overweightFee: 0,
+    overweightFeePaid: false,
+    askingFirstName: false,
+    firstNameCorrect: false,
+    firstNameEntered: "",
+    askingLastName: false,
+    lastNameCorrect: false,
+    lastNameEntered: "",
+    askingAge: false,
+    ageCorrect: false,
+    askingFlight: false,
+    flightCorrect: false,
+    askingPassportNo: false,
+    passportNoCorrect: false,
+    askingDestination: false,
+    destinationCorrect: false,
+    destinationEntered: "",
+  },
+  securityState: {
     trayRequested: false,
+    laptopTrayRequested: false,
     itemsInTray: [],
     scanStarted: false,
     beeped: false,
     beepReason: "",
-    extraCheckDone: false,
+    wandChecked: false,
     cleared: false,
   },
   log: [],
@@ -256,7 +286,7 @@ io.on("connection", (socket) => {
            gameState.scenario === "security") {
   assignedRole = "security";
   gameState.security = socket.id;
-}
+
     } else if (!takenRoles.includes("clerk")) {
       assignedRole = "clerk";
       gameState.clerk = socket.id;
