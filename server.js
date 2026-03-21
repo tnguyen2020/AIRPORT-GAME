@@ -15,40 +15,22 @@ app.get("/", (req, res) => {
 // ── Game State ──────────────────────────────────────────────
 const gameState = {
   phase: "waiting",
+  scenario: "checkin", // "checkin" | "security"
   roles: {},
   passengers: {},
   clerk: null,
+  security: null,
   host: null,
-  checkin: {
-    passportRequested: false,
-    passportReceived: false,
-    passportValid: false,
-    bagsRequested: false,
-    bagsOnBelt: false,
-    bagsConfirmed: false,
-    bagCount: 0,
-    bagWeight: 0,
-    seatAssigned: false,
-    seatType: "",
-    boardingPassIssued: false,
-    overweightBag: false,
-    overweightFee: 0,
-    overweightFeePaid: false,
-    askingFirstName: false,
-    firstNameCorrect: false,
-    firstNameEntered: "",
-    askingLastName: false,
-    lastNameCorrect: false,
-    lastNameEntered: "",
-    askingAge: false,
-    ageCorrect: false,
-    askingFlight: false,
-    flightCorrect: false,
-    askingPassportNo: false,
-    passportNoCorrect: false,
-    askingDestination: false,
-    destinationCorrect: false,
-    destinationEntered: "",
+  checkin: { ...existing checkin state... },
+  security: {
+    phase: "waiting",
+    trayRequested: false,
+    itemsInTray: [],
+    scanStarted: false,
+    beeped: false,
+    beepReason: "",
+    extraCheckDone: false,
+    cleared: false,
   },
   log: [],
 };
@@ -133,9 +115,27 @@ function broadcastAll() {
   broadcastToPassengers();
 }
 
+function broadcastToSecurity() {
+  if (gameState.security) {
+    io.to(gameState.security).emit("state_update", {
+      securityState: gameState.securityState,
+      phase: gameState.phase,
+    });
+  }
+}
+
 // ── Socket Events ────────────────────────────────────────────
 io.on("connection", (socket) => {
   console.log(`[+] Connected: ${socket.id}`);
+
+  socket.on("select_scenario", ({ scenario }) => {
+  if (gameState.roles[socket.id] !== "host") return;
+  gameState.scenario = scenario;
+  gameState.phase = "waiting";
+  addLog(`📋 Scenario selected: ${scenario}`, "info");
+  broadcastAll();
+  io.emit("scenario_selected", { scenario });
+});
 
   socket.on("join_host", () => {
     gameState.host = socket.id;
@@ -231,19 +231,32 @@ io.on("connection", (socket) => {
           destination,
           seat,
         },
-        luggage,
-        items: {
-          passport: { label: "Passport", emoji: "🛂", owned: true,  sent: false },
-          luggage:  { label: "Luggage",  emoji: "🧳", owned: true,  sent: false },
-          carryOn:  { label: "Carry-on", emoji: "🎒", owned: luggage.carryOn, sent: false },
-          phone:    { label: "Phone",    emoji: "📱", owned: true,  sent: false },
-          water:    { label: "Water",    emoji: "💧", owned: true,  sent: false },
-          keys:     { label: "Keys",     emoji: "🔑", owned: true,  sent: false },
-          coins:    { label: "Coins",    emoji: "🪙", owned: true,  sent: false },
-        },
-        boardingPass: null,
-      };
-
+  luggage: luggage,
+  items: {
+    // Check-in items
+    passport: { label: "Passport",  emoji: "🛂", owned: true, sent: false, category: "checkin" },
+    luggage:  { label: "Luggage",   emoji: "🧳", owned: true, sent: false, category: "checkin" },
+    carryOn:  { label: "Carry-on",  emoji: "🎒", owned: luggage.carryOn, sent: false, category: "checkin" },
+    // Security tray items
+    phone:    { label: "Phone",     emoji: "📱", owned: true, inTray: false, category: "tray" },
+    keys:     { label: "Keys",      emoji: "🔑", owned: true, inTray: false, category: "tray" },
+    coins:    { label: "Coins",     emoji: "🪙", owned: true, inTray: false, category: "tray" },
+    belt:     { label: "Belt",      emoji: "👔", owned: true, inTray: false, category: "tray" },
+    shoes:    { label: "Shoes",     emoji: "👟", owned: true, inTray: false, category: "tray" },
+    laptop:   { label: "Laptop",    emoji: "💻", owned: true, inTray: false, category: "tray" },
+    // Flagged items (random chance)
+    water:    { label: "Water",     emoji: "💧", owned: true, inTray: false, category: "flagged", flagReason: "No liquids over 100ml!" },
+    scissors: { label: "Scissors",  emoji: "✂️", owned: false, inTray: false, category: "flagged", flagReason: "Sharp objects not allowed!" },
+    lighter:  { label: "Lighter",   emoji: "🔥", owned: false, inTray: false, category: "flagged", flagReason: "Lighters are restricted!" },
+  },
+  boardingPass: null,
+};
+// In join_player, after clerk assignment add:
+} else if (!takenRoles.includes("security") && 
+           gameState.scenario === "security") {
+  assignedRole = "security";
+  gameState.security = socket.id;
+}
     } else if (!takenRoles.includes("clerk")) {
       assignedRole = "clerk";
       gameState.clerk = socket.id;
@@ -269,6 +282,153 @@ io.on("connection", (socket) => {
       broadcastAll();
     }
   });
+
+  // Generate random security scenario
+// Randomly give passenger 1-2 flagged items
+const flaggedItems = ["water", "scissors", "lighter"];
+const numFlagged = Math.floor(Math.random() * 2); // 0 or 1 flagged item
+const randomFlagged = flaggedItems
+  .sort(() => Math.random() - 0.5)
+  .slice(0, numFlagged);
+
+randomFlagged.forEach(key => {
+  gameState.passengers[socket.id].items[key].owned = true;
+});
+
+socket.on("security_action", ({ action, data }) => {
+  if (gameState.roles[socket.id] !== "security") return;
+  const sc = gameState.securityState;
+
+  switch (action) {
+
+    case "request_tray": {
+      sc.trayRequested = true;
+      addLog("👮 Officer: Please place all items in the tray!", "action");
+      broadcastToPassengers();
+      broadcastToSecurity();
+      break;
+    }
+
+    case "request_laptop_tray": {
+      sc.laptopTrayRequested = true;
+      addLog("👮 Officer: Laptop needs a separate tray!", "action");
+      broadcastToPassengers();
+      break;
+    }
+
+    case "start_scan": {
+      sc.scanStarted = true;
+      addLog("👮 Officer: Please walk through the scanner!", "action");
+
+      // Check if passenger forgot anything
+      const passenger = Object.values(gameState.passengers)[0];
+      const scenario = passenger?.securityScenario;
+      const items = passenger?.items;
+
+      setTimeout(() => {
+        // Check for beep triggers
+        let beepReasons = [];
+
+        if (scenario?.forgotBelt && !items?.belt?.inTray) {
+          beepReasons.push("belt");
+        }
+        if (scenario?.forgotShoes && !items?.shoes?.inTray) {
+          beepReasons.push("shoes");
+        }
+        if (items?.coins?.owned && !items?.coins?.inTray) {
+          beepReasons.push("coins");
+        }
+
+        if (beepReasons.length > 0) {
+          sc.beeped = true;
+          sc.beepReason = beepReasons[0];
+          addLog(`🚨 BEEP! Scanner detected: ${beepReasons[0]}!`, "warning");
+          io.to(socket.id).emit("scanner_beep", {
+            reasons: beepReasons
+          });
+          // Tell passenger about beep
+          const passengerSock = Object.entries(gameState.roles)
+            .find(([, r]) => r === "passenger");
+          if (passengerSock) {
+            io.to(passengerSock[0]).emit("you_beeped", {
+              reasons: beepReasons
+            });
+          }
+        } else {
+          sc.cleared = true;
+          addLog("✅ All clear! Passenger may proceed!", "success");
+          io.to(socket.id).emit("scanner_clear");
+          const passengerSock = Object.entries(gameState.roles)
+            .find(([, r]) => r === "passenger");
+          if (passengerSock) {
+            io.to(passengerSock[0]).emit("security_cleared");
+          }
+          gameState.phase = "complete";
+        }
+        broadcastAll();
+      }, 3000); // 3 second scan delay for drama!
+
+      broadcastAll();
+      break;
+    }
+
+    case "confiscate_item": {
+      const passenger2 = Object.values(gameState.passengers)[0];
+      if (passenger2?.items[data.itemKey]) {
+        passenger2.items[data.itemKey].confiscated = true;
+        addLog(`🚫 ${data.itemKey} confiscated!`, "warning");
+        const passengerSock = Object.entries(gameState.roles)
+          .find(([, r]) => r === "passenger");
+        if (passengerSock) {
+          io.to(passengerSock[0]).emit("item_confiscated", {
+            itemKey: data.itemKey,
+            reason: passenger2.items[data.itemKey].flagReason
+          });
+        }
+      }
+      broadcastAll();
+      break;
+    }
+
+    case "wand_check": {
+      sc.wandChecked = true;
+      addLog("👮 Officer uses handheld scanner...", "action");
+      setTimeout(() => {
+        const passenger3 = Object.values(gameState.passengers)[0];
+        const items3 = passenger3?.items;
+        const forgotten = [];
+        if (items3?.belt?.owned && !items3?.belt?.inTray) forgotten.push("belt");
+        if (items3?.coins?.owned && !items3?.coins?.inTray) forgotten.push("coins");
+
+        if (forgotten.length > 0) {
+          io.to(socket.id).emit("wand_found", { items: forgotten });
+          addLog(`🔍 Wand found: ${forgotten.join(", ")}`, "warning");
+        } else {
+          sc.cleared = true;
+          gameState.phase = "complete";
+          io.to(socket.id).emit("wand_clear");
+          addLog("✅ Wand check clear! Proceed!", "success");
+          const passengerSock = Object.entries(gameState.roles)
+            .find(([, r]) => r === "passenger");
+          if (passengerSock) {
+            io.to(passengerSock[0]).emit("security_cleared");
+          }
+        }
+        broadcastAll();
+      }, 2000);
+      break;
+    }
+
+  }
+});
+
+// Random chance passenger forgets to remove belt/shoes
+gameState.passengers[socket.id].securityScenario = {
+  forgotBelt:   Math.random() > 0.5,
+  forgotShoes:  Math.random() > 0.6,
+  hasLaptop:    Math.random() > 0.4,
+  flaggedItems: randomFlagged,
+};
 
   // ── Clerk Actions ──────────────────────────────────────────
   socket.on("clerk_action", ({ action, data }) => {

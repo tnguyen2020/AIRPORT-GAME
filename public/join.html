@@ -81,6 +81,18 @@
   </style>
 </head>
 <body>
+
+  <div id="scenario-badge" style="
+  padding: 8px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  font-size: 0.85rem;
+  margin-bottom: 20px;
+  text-align: center;
+">
+  ✈️ Airport Game
+</div>
+
 <div class="card">
   <div class="logo">✈️</div>
   <h1>Airport Game</h1>
@@ -97,6 +109,20 @@
 <script src="/socket.io/socket.io.js"></script>
 <script>
   const socket = io();
+
+socket.on("scenario_selected", ({ scenario }) => {
+  const badge = document.getElementById("scenario-badge");
+  if (scenario === "checkin") {
+    badge.textContent = "📋 Scenario: Check-in";
+    badge.style.background = "rgba(245,158,11,0.2)";
+    badge.style.borderColor = "#f59e0b";
+  } else if (scenario === "security") {
+    badge.textContent = "🔒 Scenario: Security Check";
+    badge.style.background = "rgba(239,68,68,0.2)";
+    badge.style.borderColor = "#ef4444";
+  }
+});
+
 
   socket.on("joined", ({ role }) => {
     // Redirect to role-specific page
