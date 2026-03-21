@@ -947,21 +947,25 @@ $$
   });
 
   // ── Reset ──────────────────────────────────────────────────
-  socket.on("reset_game", () => {
-    if (gameState.roles[socket.id] !== "host") return;
-    resetCheckin();
-    Object.keys(gameState.passengers).forEach((pid) => {
-      const pLuggage = gameState.passengers[pid].luggage;
+socket.on("reset_game", () => {
+  if (gameState.roles[socket.id] !== "host") return;
+  resetCheckin();
+  resetSecurity();
+  Object.keys(gameState.passengers).forEach((pid) => {
+    if (gameState.passengers[pid] && 
+        gameState.passengers[pid].items) {
       Object.keys(gameState.passengers[pid].items).forEach((key) => {
         gameState.passengers[pid].items[key].sent = false;
+        gameState.passengers[pid].items[key].inTray = false;
+        gameState.passengers[pid].items[key].confiscated = false;
       });
       gameState.passengers[pid].boardingPass = null;
-    });
-    addLog("🔄 Game reset!", "info");
-    broadcastAll();
-    io.emit("game_reset");
+    }
   });
-
+  addLog("🔄 Game reset!", "info");
+  broadcastAll();
+  io.emit("game_reset");
+});
   // ── Disconnect ─────────────────────────────────────────────
   socket.on("disconnect", () => {
     const role = gameState.roles[socket.id];
