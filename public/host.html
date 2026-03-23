@@ -393,7 +393,7 @@ function generateQR() {
   
   // Build the join URL
   // If localhost, we still generate QR but warn teacher
-  const joinUrl = `http://${hostname}${port ? ':' + port : ''}/public/join.html`;
+  const joinUrl = `http://${hostname}${port ? ':' + port : ''}/join.html`;
   
   // Show URL
   document.getElementById("join-url-display").textContent = joinUrl;
