@@ -607,4 +607,15 @@ io.on("connection", (socket) => {
           addLog(`❌ Wrong flight number: ${data.answer}`, "warning");
           io.to(socket.id).emit("spelling_result", { field:"flightNum", correct:false, answer:data.answer });
         }
-        broadcastAll
+         broadcastAll();  // fix line 610
+        break;           // make sure break is there
+      }                  // close the case
+    }                    // close switch
+  });                    // close clerk_action
+});                      // close io.on connection
+
+// ── Start Server ─────────────────────────────────────
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`🛫 Airport Game running on port ${PORT}`);
+});
