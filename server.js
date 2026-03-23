@@ -614,8 +614,8 @@ io.on("connection", (socket) => {
   });                    // close clerk_action
 });                      // close io.on connection
 
-// ── Start Server ─────────────────────────────────────
-const PORT = process.env.PORT || 3000;
+// Change the last line to:
+const PORT = process.env.PORT || 8080;
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🛫 Airport Game running on port ${PORT}`);
 });
